@@ -1,0 +1,13 @@
+patient_id,diagnosis_date,prescription_date,pa_status,pa_date,copay_amount,first_fill_date,region,insurance_type,status
+PT-90001,2024-01-05,2024-01-08,Approved,2024-01-18,25.00,2024-01-22,Southeast,Commercial,Completed
+PT-90002,2024-01-06,2024-01-10,Pending,2024-01-25,450.00,,Southeast,Medicaid,Dropped_PA
+PT-90003,2024-01-08,2024-01-11,Approved,2024-01-16,15.00,2024-01-20,Northeast,Commercial,Completed
+PT-90004,2024-01-10,2024-01-14,Approved,2024-01-28,300.00,,Midwest,Medicare,Dropped_Copay
+PT-90005,2024-01-12,2024-01-15,Approved,2024-01-20,0.00,2024-01-24,West,Commercial,Completed
+PT-90006,2024-01-15,2024-01-18,Rejected,2024-01-30,550.00,,Southwest,Self-Pay,Dropped_PA
+PT-90007,2024-01-18,2024-01-22,Approved,2024-02-02,35.00,2024-02-05,Southeast,Medicare,Completed
+PT-90008,2024-01-20,2024-01-25,Approved,2024-02-08,40.00,2024-02-12,Midwest,Commercial,Completed
+PT-90009,2024-01-22,,,,,Northeast,Medicaid,Dropped_Rx
+PT-90010,2024-01-25,2024-01-28,Approved,2024-02-10,20.00,2024-02-14,West,Commercial,Completed
+PT-90011,2024-01-28,2024-02-01,Approved,2024-02-15,600.00,,Southwest,Medicare,Dropped_Copay
+PT-90012,2024-02-02,2024-02-05,Approved,2024-02-12,10.00,2024-02-15,Southeast,Commercial,Completed

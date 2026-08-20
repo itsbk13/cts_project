@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+sqlalchemy
+bcrypt
+python-dotenv
+python-jose
+databricks-sql-connector
+pandas
+requests
+groq

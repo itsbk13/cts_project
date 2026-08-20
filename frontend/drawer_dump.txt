@@ -1,0 +1,286 @@
+  1: "use client";
+  2: 
+  3: import React from "react";
+  4: import { Drawer } from "@/components/common/Drawer";
+  5: import { StatusBadge } from "@/components/common/StatusBadge";
+  6: import { formatCurrency, formatNumber } from "@/lib/utils";
+  7: import type { PatientRiskDetail } from "@/types/risk";
+  8: import {
+  9:   AlertTriangle,
+ 10:   Clock,
+ 11:   CheckCircle2,
+ 12:   Lightbulb,
+ 13:   DollarSign,
+ 14:   Activity,
+ 15:   ArrowRight,
+ 16:   Info,
+ 17: } from "lucide-react";
+ 18: import Link from "next/link";
+ 19: 
+ 20: // ============================================================
+ 21: // PatientRiskDrawer — Patient Triage & Explainability Drawer
+ 22: // ============================================================
+ 23: 
+ 24: interface PatientRiskDrawerProps {
+ 25:   isOpen: boolean;
+ 26:   onClose: () => void;
+ 27:   patientDetail: PatientRiskDetail | null;
+ 28:   loading?: boolean;
+ 29: }
+ 30: 
+ 31: export function PatientRiskDrawer({
+ 32:   isOpen,
+ 33:   onClose,
+ 34:   patientDetail,
+ 35:   loading,
+ 36: }: PatientRiskDrawerProps) {
+ 37:   return (
+ 38:     <Drawer
+ 39:       isOpen={isOpen}
+ 40:       onClose={onClose}
+ 41:       title={patientDetail ? `Patient Triage: ${patientDetail.patient_id}` : "Patient Risk Details"}
+ 42:       subtitle="Operational risk explanation and recommended intervention pathway"
+ 43:       id="patient-risk-drawer"
+ 44:       width={500}
+ 45:     >
+ 46:       {loading || !patientDetail ? (
+ 47:         <PatientRiskSkeleton />
+ 48:       ) : (
+ 49:         <PatientRiskContent data={patientDetail} onClose={onClose} />
+ 50:       )}
+ 51:     </Drawer>
+ 52:   );
+ 53: }
+ 54: 
+ 55: function PatientRiskContent({
+ 56:   data,
+ 57:   onClose,
+ 58: }: {
+ 59:   data: PatientRiskDetail;
+ 60:   onClose: () => void;
+ 61: }) {
+ 62:   return (
+ 63:     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+ 64:       {/* ── Top Summary Grid ────────────────────────────────── */}
+ 65:       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+ 66:         <div
+ 67:           style={{
+ 68:             padding: "12px 14px",
+ 69:             background: "var(--color-bg)",
+ 70:             border: "1px solid var(--color-border)",
+ 71:             borderRadius: 8,
+ 72:           }}
+ 73:         >
+ 74:           <span className="text-kpi-label">Risk Category</span>
+ 75:           <div style={{ marginTop: 6 }}>
+ 76:             <StatusBadge
+ 77:               label={`${data.risk_category} (${data.risk_score}%)`}
+ 78:               variant="risk"
+ 79:               riskCategory={data.risk_category}
+ 80:             />
+ 81:           </div>
+ 82:         </div>
+ 83: 
+ 84:         <div
+ 85:           style={{
+ 86:             padding: "12px 14px",
+ 87:             background: "var(--color-bg)",
+ 88:             border: "1px solid var(--color-border)",
+ 89:             borderRadius: 8,
+ 90:           }}
+ 91:         >
+ 92:           <span className="text-kpi-label">Current Stage</span>
+ 93:           <div style={{ fontSize: 15, fontWeight: 700, color: "var(--color-text-primary)", marginTop: 4 }}>
+ 94:             {data.current_stage}
+ 95:           </div>
+ 96:           <div className="text-meta" style={{ marginTop: 2 }}>
+ 97:             {data.days_in_current_stage} days elapsed
+ 98:           </div>
+ 99:         </div>
+100: 
+101:         
+102: 
+103:         <div
+104:           style={{
+105:             padding: "12px 14px",
+106:             background: "var(--color-bg)",
+107:             border: "1px solid var(--color-border)",
+108:             borderRadius: 8,
+109:           }}
+110:         >
+111:           <span className="text-kpi-label">Model Confidence</span>
+112:           <div style={{ fontSize: 18, fontWeight: 700, color: "var(--color-primary)", marginTop: 4 }}>
+113:             94.2%
+114:           </div>
+115:         </div>
+116:       </div>
+117: 
+118:       {/* ── Journey Stage Progression Timeline ──────────────── */}
+119:       <div>
+120:         <h3
+121:           style={{
+122:             fontSize: 13,
+123:             fontWeight: 600,
+124:             color: "var(--color-text-secondary)",
+125:             textTransform: "uppercase",
+126:             letterSpacing: "0.04em",
+127:             marginBottom: 12,
+128:           }}
+129:         >
+130:           Journey Timeline &amp; Milestone Progression
+131:         </h3>
+132: 
+133:         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+134:           {[
+135:             { stage: "Diagnosis", status: "completed", days: "0d", icon: CheckCircle2, color: "var(--color-success)" },
+136:             { stage: "Prescription", status: "completed", days: "4d", icon: CheckCircle2, color: "var(--color-success)" },
+137:             { stage: "Prior Authorization", status: "current", days: `${data.days_in_current_stage}d (Delayed)`, icon: AlertTriangle, color: "var(--color-danger)" },
+138:             { stage: "Copay", status: "pending", days: "—", icon: Clock, color: "var(--color-text-muted)" },
+139:             { stage: "First Fill", status: "pending", days: "—", icon: Clock, color: "var(--color-text-muted)" },
+140:           ].map((step) => {
+141:             const Icon = step.icon;
+142:             const isCurrent = step.status === "current";
+143:             return (
+144:               <div
+145:                 key={step.stage}
+146:                 style={{
+147:                   display: "flex",
+148:                   alignItems: "center",
+149:                   justifyContent: "space-between",
+150:                   padding: "9px 12px",
+151:                   borderRadius: 6,
+152:                   background: isCurrent ? "var(--color-danger-bg)" : step.status === "completed" ? "var(--color-bg)" : "transparent",
+153:                   border: isCurrent ? "1px solid #FECACA" : "1px solid var(--color-border)",
+154:                 }}
+155:               >
+156:                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+157:                   <Icon size={14} color={step.color} />
+158:                   <span
+159:                     style={{
+160:                       fontSize: 13,
+161:                       fontWeight: isCurrent ? 700 : 500,
+162:                       color: step.status === "pending" ? "var(--color-text-muted)" : "var(--color-text-primary)",
+163:                     }}
+164:                   >
+165:                     {step.stage}
+166:                   </span>
+167:                 </div>
+168: 
+169:                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+170:                   <span className="text-meta" style={{ fontWeight: isCurrent ? 700 : 400, color: isCurrent ? "var(--color-danger)" : "var(--color-text-secondary)" }}>
+171:                     {step.days}
+172:                   </span>
+173:                   <span
+174:                     style={{
+175:                       fontSize: 10,
+176:                       fontWeight: 700,
+177:                       textTransform: "uppercase",
+178:                       color: isCurrent ? "var(--color-danger)" : step.status === "completed" ? "var(--color-success)" : "var(--color-text-muted)",
+179:                     }}
+180:                   >
+181:                     {step.status}
+182:                   </span>
+183:                 </div>
+184:               </div>
+185:             );
+186:           })}
+187:         </div>
+188:       </div>
+189: 
+190:       {/* ── Key Risk Factors (SHAP Drivers) ────────────────── */}
+191:       <div>
+192:         <h3
+193:           style={{
+194:             fontSize: 13,
+195:             fontWeight: 600,
+196:             color: "var(--color-text-secondary)",
+197:             textTransform: "uppercase",
+198:             letterSpacing: "0.04em",
+199:             marginBottom: 10,
+200:           }}
+201:         >
+202:           Contributing Risk Factors
+203:         </h3>
+204: 
+205:         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+206:           {data.risk_factors.map((factor) => {
+207:             const isPositive = factor.contribution > 0;
+208:             return (
+209:               <div
+210:                 key={factor.name}
+211:                 style={{
+212:                   padding: "10px 12px",
+213:                   borderRadius: 6,
+214:                   background: "var(--color-bg)",
+215:                   border: "1px solid var(--color-border)",
+216:                 }}
+217:               >
+218:                 <div
+219:                   style={{
+220:                     display: "flex",
+221:                     justifyContent: "space-between",
+222:                     alignItems: "center",
+223:                     marginBottom: 4,
+224:                   }}
+225:                 >
+226:                   <span style={{ fontSize: 13, fontWeight: 600, color: "var(--color-text-primary)" }}>
+227:                     {factor.name}
+228:                   </span>
+229:                   <span
+230:                     style={{
+231:                       fontSize: 12,
+232:                       fontWeight: 700,
+233:                       color: isPositive ? "var(--color-danger)" : "var(--color-success)",
+234:                     }}
+235:                   >
+236:                     {isPositive ? `+${(factor.contribution * 100).toFixed(0)}% risk shift` : `${(factor.contribution * 100).toFixed(0)}% protective`}
+237:                   </span>
+238:                 </div>
+239:                 <p className="text-meta" style={{ margin: 0 }}>
+240:                   {factor.description}
+241:                 </p>
+242:               </div>
+243:             );
+244:           })}
+245:         </div>
+246:       </div>
+247: 
+248:       {/* ── WHY THIS PATIENT IS AT RISK ─────────────────────── */}
+249:       <div
+250:         style={{
+251:           padding: "12px 14px",
+252:           background: "var(--color-bg)",
+253:           borderRadius: 8,
+254:           border: "1px solid var(--color-border)",
+255:         }}
+256:       >
+257:         <div style={{ fontSize: 11, fontWeight: 700, color: "var(--color-danger)", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 4 }}>
+258:           Why This Patient is Considered High Risk
+259:         </div>
+260:         <p className="text-meta" style={{ margin: 0, color: "var(--color-text-primary)", lineHeight: 1.5 }}>
+261:           Patient has exceeded the 10-day median PA processing window by 4 days in a high-rejection region. Without proactive case specialist follow-up, the probability of drop-off before Copay enrollment is 89%.
+262:         </p>
+263:       </div>
+264: 
+265:       {/* ── RECOMMENDED ACTION ───────────────────────────────── */}
+266:       
+267: 
+268:       {/* ── Deep Dive Link to SHAP ─────────────────────────── */}
+269:       
+270:     </div>
+271:   );
+272: }
+273: 
+274: function PatientRiskSkeleton() {
+275:   return (
+276:     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+277:       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+278:         {[...Array(4)].map((_, i) => (
+279:           <div key={i} className="skeleton-pulse" style={{ height: 60, borderRadius: 8 }} />
+280:         ))}
+281:       </div>
+282:       <div className="skeleton-pulse" style={{ height: 140, borderRadius: 8 }} />
+283:       <div className="skeleton-pulse" style={{ height: 120, borderRadius: 8 }} />
+284:     </div>
+285:   );
+286: }

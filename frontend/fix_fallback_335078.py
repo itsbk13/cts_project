@@ -1,0 +1,17 @@
+import re
+
+with open(r"x:\login\frontend\src\services\analyticsApi.ts", "r", encoding="utf-8") as f:
+    content = f.read()
+
+content = content.replace("test_1000", "hosp_335078")
+
+with open(r"x:\login\frontend\src\services\analyticsApi.ts", "w", encoding="utf-8") as f:
+    f.write(content)
+
+with open(r"x:\login\frontend\src\lib\api.ts", "r", encoding="utf-8") as f:
+    content = f.read()
+
+content = content.replace("test_1000", "hosp_335078")
+
+with open(r"x:\login\frontend\src\lib\api.ts", "w", encoding="utf-8") as f:
+    f.write(content)

@@ -1,0 +1,88 @@
+Created At: 2026-08-20T00:21:31+05:30
+Completed At: 2026-08-20T00:21:32+05:30
+File Path: `file:///x:/login/frontend/src/app/funnel/page.tsx`
+Total Lines: 413
+Total Bytes: 18021
+Showing lines 1 to 80
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1: "use client";
+2: 
+3: import React, { useEffect, useState, useCallback } from "react";
+4: import { getFunnel, getLeakageDrawer } from "@/lib/api";
+5: import type { FunnelData } from "@/types/analytics";
+6: import type { LeakageDrawerData } from "@/types/analytics";
+7: import { formatNumber, formatPercent, formatDays } from "@/lib/utils";
+8: 
+9: import { FilterBar } from "@/components/common/FilterBar";
+10: import { Card } from "@/components/common/Card";
+11: import { ErrorState } from "@/components/common/ErrorState";
+12: import { ChartSkeleton } from "@/components/common/LoadingSkeleton";
+13: 
+14: import { JourneyPathway } from "@/components/overview/JourneyPathway";
+15: import { LeakageDrawer } from "@/components/leakage/LeakageDrawer";
+16: import { useDatasetStore } from "@/store/datasetStore";
+17: import { useFilterStore } from "@/store/filterStore";
+18: import {
+19:   AlertTriangle,
+20:   ArrowRight,
+21:   Clock,
+22:   TrendingDown,
+23:   Users,
+24:   Search,
+25:   CheckCircle2,
+26: } from "lucide-react";
+27: 
+28: // ============================================================
+29: // Page 2 — Journey Analytics
+30: // Purpose: "Trace patient progression and identify where journey friction occurs."
+31: // ============================================================
+32: 
+33: export default function JourneyPage() {
+34:   const [funnel, setFunnel] = useState<FunnelData | null>(null);
+35:   const [loading, setLoading] = useState(true);
+36:   const [error, setError] = useState(false);
+37: 
+38:   const { metadata } = useDatasetStore();
+39:   const lastUpdated = metadata.last_updated;
+40:   const { region, diagnosis, insurance, provider, newExisting } = useFilterStore();
+41: 
+42:   // Drawer state
+43:   const [drawerOpen, setDrawerOpen] = useState(false);
+44:   const [drawerData, setDrawerData] = useState<LeakageDrawerData | null>(null);
+45:   const [drawerLoading, setDrawerLoading] = useState(false);
+46: 
+47:   const load = useCallback(async () => {
+48:     setLoading(true);
+49:     setError(false);
+50:     try {
+51:       const data = await getFunnel();
+52:       setFunnel(data);
+53:     } catch {
+54:       setError(true);
+55:     } finally {
+56:       setLoading(false);
+57:     }
+58:   }, []);
+59: 
+60:   useEffect(() => {
+61:     load();
+62:   }, [load, region, diagnosis, insurance, provider, newExisting]);
+63: 
+64:   const handleInvestigate = useCallback(async (stageName: string) => {
+65:     setDrawerOpen(true);
+66:     setDrawerLoading(true);
+67:     setDrawerData(null);
+68:     try {
+69:       const data = await getLeakageDrawer(stageName);
+70:       setDrawerData(data);
+71:     } catch {
+72:       // drawer displays skeleton
+73:     } finally {
+74:       setDrawerLoading(false);
+75:     }
+76:   }, []);
+77: 
+78:   if (error) return <ErrorState onRetry={load} />;
+79: 
+80:   const bottleneckStage = funnel?.stages[2] || {
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

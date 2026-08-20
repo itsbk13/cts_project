@@ -1,0 +1,435 @@
+  1: "use client";
+  2: 
+  3: import React, { useEffect, useState, useCallback } from "react";
+  4: import {
+  5:   Users,
+  6:   CheckCircle2,
+  7:   TrendingDown,
+  8:   AlertTriangle,
+  9:   DollarSign,
+ 10:   ShieldAlert,
+ 11:   Activity,
+ 12:   ArrowRight,
+ 13:   Flame,
+ 14:   Search,
+ 15:   Sparkles,
+ 16:   MapPin,
+ 17: } from "lucide-react";
+ 18: 
+ 19: import { getOverview, getLeakage, getRiskOverview, getFunnel, getLeakageDrawer } from "@/lib/api";
+ 20: import { formatNumber, formatPercent, formatCurrency } from "@/lib/utils";
+ 21: 
+ 22: import { Card } from "@/components/common/Card";
+ 23: import { FilterBar } from "@/components/common/FilterBar";
+ 24: import { ErrorState } from "@/components/common/ErrorState";
+ 25: import { KPIGridSkeleton, ChartSkeleton } from "@/components/common/LoadingSkeleton";
+ 26: 
+ 27: import { JourneyPathway } from "@/components/overview/JourneyPathway";
+ 28: import { TopLeakageDrivers } from "@/components/overview/TopLeakageDrivers";
+ 29: import { RiskSummaryChart } from "@/components/overview/RiskSummaryChart";
+ 30: import { LeakageDrawer } from "@/components/leakage/LeakageDrawer";
+ 31: 
+ 32: import type { OverviewKPIs, FunnelData, StageLeakage, RegionalLeakage, TrendPoint, OutcomeDistribution, LeakageDrawerData } from "@/types/analytics";
+ 33: import type { RiskDistributionPoint } from "@/types/risk";
+ 34: import type { LeakageDriver } from "@/types/analytics";
+ 35: import { useDatasetStore } from "@/store/datasetStore";
+ 36: import { useFilterStore } from "@/store/filterStore";
+ 37: import Link from "next/link";
+ 38: 
+ 39: // ============================================================
+ 40: // Page 1 — Patient Journey Command Center
+ 41: // Purpose: "Real-time visibility into patient progression, leakage and journey risk."
+ 42: // ============================================================
+ 43: 
+ 44: interface OverviewData {
+ 45:   kpis: OverviewKPIs;
+ 46:   outcomeDistribution: OutcomeDistribution[];
+ 47:   trend: TrendPoint[];
+ 48:   funnel: FunnelData;
+ 49:   stageLeakage: StageLeakage[];
+ 50:   regionalLeakage: RegionalLeakage[];
+ 51:   leakageDrivers: LeakageDriver[];
+ 52:   riskDistribution: RiskDistributionPoint[];
+ 53: }
+ 54: 
+ 55: export default function CommandCenterPage() {
+ 56:   const [data, setData] = useState<OverviewData | null>(null);
+ 57:   const [loading, setLoading] = useState(true);
+ 58:   const [error, setError] = useState(false);
+ 59: 
+ 60:   // Leakage Drawer
+ 61:   const [drawerOpen, setDrawerOpen] = useState(false);
+ 62:   const [drawerData, setDrawerData] = useState<LeakageDrawerData | null>(null);
+ 63:   const [drawerLoading, setDrawerLoading] = useState(false);
+ 64: 
+ 65:   const { metadata } = useDatasetStore();
+ 66:   const lastUpdated = metadata.last_updated;
+ 67:   const { region, diagnosis, insurance, provider, newExisting, hasActiveFilters } = useFilterStore();
+ 68:   const isFiltered = hasActiveFilters();
+ 69: 
+ 70:   const load = useCallback(async () => {
+ 71:     setLoading(true);
+ 72:     setError(false);
+ 73:     try {
+ 74:       const [overview, leakage, risk, funnel] = await Promise.all([
+ 75:         getOverview(),
+ 76:         getLeakage(),
+ 77:         getRiskOverview(),
+ 78:         getFunnel(),
+ 79:       ]);
+ 80:       setData({
+ 81:         kpis: overview.kpis,
+ 82:         outcomeDistribution: overview.outcomeDistribution,
+ 83:         trend: overview.trend,
+ 84:         funnel,
+ 85:         stageLeakage: leakage.stageLeakage,
+ 86:         regionalLeakage: leakage.regionalLeakage,
+ 87:         leakageDrivers: leakage.drivers,
+ 88:         riskDistribution: risk.distribution,
+ 89:       });
+ 90:     } catch {
+ 91:       setError(true);
+ 92:     } finally {
+ 93:       setLoading(false);
+ 94:     }
+ 95:   }, []);
+ 96: 
+ 97:   useEffect(() => {
+ 98:     load();
+ 99:   }, [load, region, diagnosis, insurance, provider, newExisting]);
+100: 
+101:   const handleInvestigate = async (stage: string) => {
+102:     setDrawerOpen(true);
+103:     setDrawerLoading(true);
+104:     try {
+105:       const detail = await getLeakageDrawer(stage);
+106:       setDrawerData(detail);
+107:     } catch {
+108:       // display skeleton in drawer
+109:     } finally {
+110:       setDrawerLoading(false);
+111:     }
+112:   };
+113: 
+114:   if (error) {
+115:     return <ErrorState onRetry={load} />;
+116:   }
+117: 
+118:   return (
+119:     <>
+120:       <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+121:         {/* ── Page Top Controls & Health Badge ────────────────── */}
+122:         <div
+123:           style={{
+124:             display: "flex",
+125:             justifyContent: "space-between",
+126:             alignItems: "center",
+127:             gap: 16,
+128:             flexWrap: "wrap",
+129:           }}
+130:         >
+131:           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+132:             <span
+133:               style={{
+134:                 display: "inline-flex",
+135:                 alignItems: "center",
+136:                 gap: 6,
+137:                 padding: "4px 10px",
+138:                 borderRadius: 20,
+139:                 background: "var(--color-warning-bg)",
+140:                 border: "1px solid #FED7AA",
+141:                 fontSize: 12,
+142:                 fontWeight: 600,
+143:                 color: "var(--color-warning)",
+144:               }}
+145:             >
+146:               <span
+147:                 style={{
+148:                   width: 7,
+149:                   height: 7,
+150:                   borderRadius: "50%",
+151:                   background: "var(--color-warning)",
+152:                   display: "inline-block",
+153:                 }}
+154:               />
+155:               JOURNEY HEALTH: Needs Attention
+156:             </span>
+157: 
+158:             <span className="text-meta" style={{ fontSize: 12 }}>
+159:               Population: <strong>{isFiltered ? `${formatNumber(data?.kpis.total_patients || 0)} of ${formatNumber(metadata.patient_count)}` : `${formatNumber(metadata.patient_count)} Patients`}</strong>
+160:             </span>
+161:           </div>
+162: 
+163:           <FilterBar show={["region", "insurance", "newExisting"]} />
+164:         </div>
+165: 
+166:         {/* ── Quick Operational Actions ───────────────────────── */}
+167:         <div
+168:           style={{
+169:             display: "flex",
+170:             gap: 12,
+171:             alignItems: "center",
+172:             background: "var(--color-surface)",
+173:             padding: "14px 18px",
+174:             borderRadius: 8,
+175:             border: "1px solid var(--color-border)",
+176:             borderLeft: "4px solid var(--color-teal)",
+177:             flexWrap: "wrap",
+178:           }}
+179:         >
+180:           <span style={{ fontSize: 13, fontWeight: 700, color: "var(--color-navy)", marginRight: 8 }}>
+181:             QUICK OPERATIONS:
+182:           </span>
+183:           <Link
+184:             href="/patients/register"
+185:             className="btn-primary"
+186:             style={{
+187:               padding: "8px 14px",
+188:               fontSize: 12,
+189:               fontWeight: 600,
+190:               textDecoration: "none",
+191:               background: "var(--color-teal)",
+192:               display: "inline-flex",
+193:               alignItems: "center",
+194:               gap: 4,
+195:             }}
+196:           >
+197:             <span>+ Register Patient</span>
+198:           </Link>
+199:           <Link
+200:             href="/journey/event"
+201:             className="btn-secondary"
+202:             style={{
+203:               padding: "8px 14px",
+204:               fontSize: 12,
+205:               fontWeight: 600,
+206:               textDecoration: "none",
+207:               display: "inline-flex",
+208:               alignItems: "center",
+209:               gap: 4,
+210:             }}
+211:           >
+212:             <span>+ Update Journey</span>
+213:           </Link>
+214:         </div>
+215: 
+216:         {/* ── Signal Cards (5 Cards) ──────────────────────────── */}
+217:         {loading || !data ? (
+218:           <KPIGridSkeleton count={5} />
+219:         ) : (
+220:           <div
+221:             style={{
+222:               display: "grid",
+223:               gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
+224:               gap: 12,
+225:             }}
+226:           >
+227:             {/* Card 1: Journey Health */}
+228:             <div className="card" style={{ padding: "14px 16px" }}>
+229:               <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 6 }}>
+230:                 <CheckCircle2 size={14} color="var(--color-success)" />
+231:                 <span className="text-kpi-label">Journey Health</span>
+232:               </div>
+233:               <div style={{ fontSize: 24, fontWeight: 700, color: "var(--color-success)", lineHeight: 1.1 }}>
+234:                 {formatPercent(data.kpis.first_fill_rate)}
+235:               </div>
+236:               <div className="text-meta" style={{ marginTop: 4, color: "var(--color-danger)", fontWeight: 600 }}>
+237:                 ↓ {formatPercent(data.kpis.dropoff_rate)} Cumulative Leakage
+238:               </div>
+239:             </div>
+240: 
+241:             {/* Card 2: Primary Bottleneck */}
+242:             <div className="card" style={{ padding: "14px 16px", borderLeft: "3px solid var(--color-danger)" }}>
+243:               <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 6 }}>
+244:                 <AlertTriangle size={14} color="var(--color-danger)" />
+245:                 <span className="text-kpi-label" style={{ color: "var(--color-danger)" }}>Primary Bottleneck</span>
+246:               </div>
+247:               <div style={{ fontSize: 18, fontWeight: 700, color: "var(--color-text-primary)", lineHeight: 1.2 }}>
+248:                 Prior Authorization
+249:               </div>
+250:               <div className="text-meta" style={{ marginTop: 4 }}>
+251:                 18.3% Drop-off • 851 Affected Pts
+252:               </div>
+253:             </div>
+254: 
+255:             {/* Card 3: Early Warning */}
+256:             <div className="card" style={{ padding: "14px 16px" }}>
+257:               <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 6 }}>
+258:                 <ShieldAlert size={14} color="var(--color-danger)" />
+259:                 <span className="text-kpi-label">Early Warning</span>
+260:               </div>
+261:               <div style={{ fontSize: 24, fontWeight: 700, color: "var(--color-danger)", lineHeight: 1.1 }}>
+262:                 {formatNumber(data.kpis.high_risk_active)}
+263:               </div>
+264:               <div className="text-meta" style={{ marginTop: 4 }}>
+265:                 High-Risk Active in Pipeline
+266:               </div>
+267:             </div>
+268: 
+269:             {/* Card 4: Business Impact */}
+270:             <div className="card" style={{ padding: "14px 16px" }}>
+271:               <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 6 }}>
+272:                 <DollarSign size={14} color="var(--color-danger)" />
+273:                 <span className="text-kpi-label">Business Impact</span>
+274: 
+275:             {/* Card 5: Active Journey */}
+276:             <div className="card" style={{ padding: "14px 16px" }}>
+277:               <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 6 }}>
+278:                 <Activity size={14} color="var(--color-teal)" />
+279:                 <span className="text-kpi-label">Active Journey</span>
+280:               </div>
+281:               <div style={{ fontSize: 24, fontWeight: 700, color: "var(--color-teal)", lineHeight: 1.1 }}>
+282:                 1,930
+283:               </div>
+284:               <div className="text-meta" style={{ marginTop: 4 }}>
+285:                 Patients Currently in Progress
+286:               </div>
+287:             </div>
+288:           </div>
+289:         )}
+290: 
+291:         {/* ── Hero: Connected Journey Pathway ──────────────────── */}
+292:         {loading || !data ? (
+293:           <ChartSkeleton height={320} />
+294:         ) : (
+295:           <Card
+296:             title="Patient Journey Pathway"
+297:             subtitle="Live end-to-end progression pathway from Diagnosis to First Fill with stage conversion and drop-off markers"
+298:           >
+299:             <JourneyPathway
+300:               data={data.funnel}
+301:               onInvestigateStage={handleInvestigate}
+302:             />
+303:           </Card>
+304:         )}
+305: 
+306:         {/* ── Lower 3-Column Analytical Section ───────────────── */}
+307:         {loading || !data ? (
+308:           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
+309:             <ChartSkeleton height={240} />
+310:             <ChartSkeleton height={240} />
+311:             <ChartSkeleton height={240} />
+312:           </div>
+313:         ) : (
+314:           <div
+315:             style={{
+316:               display: "grid",
+317:               gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+318:               gap: 14,
+319:             }}
+320:           >
+321:             {/* Block 1: Leakage Signals */}
+322:             <Card
+323:               title="Leakage Signals"
+324:               subtitle="Top statistical root causes"
+325:             >
+326:               <TopLeakageDrivers data={data.leakageDrivers} limit={3} />
+327:             </Card>
+328: 
+329:             {/* Block 2: Risk Snapshot */}
+330:             <Card
+331:               title="Risk Snapshot"
+332:               subtitle="Active pipeline by drop-off propensity"
+333:             >
+334:               <RiskSummaryChart data={data.riskDistribution} />
+335:             </Card>
+336: 
+337:             {/* Block 3: Regional Signal */}
+338:             <Card
+339:               title="Regional Signal"
+340:               subtitle="Geographic friction anomalies"
+341:             >
+342:               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+343:                 <div
+344:                   style={{
+345:                     padding: "12px 14px",
+346:                     borderRadius: 6,
+347:                     background: "var(--color-danger-bg)",
+348:                     border: "1px solid #FECACA",
+349:                   }}
+350:                 >
+351:                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+352:                     <span style={{ fontSize: 13, fontWeight: 700, color: "var(--color-danger)", display: "flex", alignItems: "center", gap: 5 }}>
+353:                       <MapPin size={14} />
+354:                       Southeast Region
+355:                     </span>
+356:                     <span style={{ fontSize: 13, fontWeight: 700, color: "var(--color-danger)" }}>
+357:                       44.1% Drop-off
+358:                     </span>
+359:                   </div>
+360:                   <p className="text-meta" style={{ margin: "4px 0 0", color: "var(--color-text-primary)" }}>
+361:                     +5.5% above national baseline, driven by Medicaid review latency.
+362:                   </p>
+363:                 </div>
+364: 
+365:                 <div
+366:                   style={{
+367:                     padding: "12px 14px",
+368:                     borderRadius: 6,
+369:                     background: "var(--color-success-bg)",
+370:                     border: "1px solid #BBF7D0",
+371:                   }}
+372:                 >
+373:                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+374:                     <span style={{ fontSize: 13, fontWeight: 700, color: "var(--color-success)", display: "flex", alignItems: "center", gap: 5 }}>
+375:                       <MapPin size={14} />
+376:                       Northeast Region
+377:                     </span>
+378:                     <span style={{ fontSize: 13, fontWeight: 700, color: "var(--color-success)" }}>
+379:                       35.4% Drop-off
+380:                     </span>
+381:                   </div>
+382:                   <p className="text-meta" style={{ margin: "4px 0 0", color: "var(--color-text-primary)" }}>
+383:                     Lowest observed friction, optimal specialty pharmacy access.
+384:                   </p>
+385:                 </div>
+386:               </div>
+387:             </Card>
+388:           </div>
+389:         )}
+390: 
+391:         {/* ── Recent Journey Insights Callout ─────────────────── */}
+392:         <div
+393:           style={{
+394:             padding: "14px 18px",
+395:             borderRadius: 8,
+396:             background: "var(--color-surface)",
+397:             border: "1px solid var(--color-border)",
+398:             display: "flex",
+399:             flexDirection: "column",
+400:             gap: 8,
+401:           }}
+402:         >
+403:           <div style={{ fontSize: 11, fontWeight: 700, color: "var(--color-teal)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+404:             Recent Journey Insights
+405:           </div>
+406: 
+407:           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12 }}>
+408:             <div style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13 }}>
+409:               <span style={{ color: "var(--color-danger)" }}>⚠</span>
+410:               <span><strong>Prior Authorization</strong> is currently the largest leakage point (18.3% drop-off across 851 patients).</span>
+411:             </div>
+412: 
+413:             <div style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13 }}>
+414:               <span style={{ color: "var(--color-warning)" }}>△</span>
+415:               <span><strong>312 active patients</strong> are classified as high risk, requiring proactive case specialist triage.</span>
+416:             </div>
+417: 
+418:             <div style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13 }}>
+419:               <span style={{ color: "var(--color-success)" }}>●</span>
+420:               <span><strong>First Fill conversion rate is 61.4%</strong> across the baseline 5,000-patient analysis cohort.</span>
+421:             </div>
+422:           </div>
+423:         </div>
+424:       </div>
+425: 
+426:       {/* ── Leakage Investigation Drawer ─────────────────────── */}
+427:       <LeakageDrawer
+428:         isOpen={drawerOpen}
+429:         onClose={() => setDrawerOpen(false)}
+430:         data={drawerData}
+431:         loading={drawerLoading}
+432:       />
+433:     </>
+434:   );
+435: }

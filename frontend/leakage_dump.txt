@@ -1,0 +1,288 @@
+  1: "use client";
+  2: 
+  3: import React, { useEffect, useState, useCallback } from "react";
+  4: import { getLeakage, getLeakageDrawer } from "@/lib/api";
+  5: import type { LeakageDriver, StageLeakage, RegionalLeakage, LeakageDrawerData } from "@/types/analytics";
+  6: 
+  7: import { FilterBar } from "@/components/common/FilterBar";
+  8: import { Card } from "@/components/common/Card";
+  9: import { ErrorState } from "@/components/common/ErrorState";
+ 10: import { ChartSkeleton } from "@/components/common/LoadingSkeleton";
+ 11: import { StatusBadge } from "@/components/common/StatusBadge";
+ 12: 
+ 13: import { LeakageDriverChart } from "@/components/leakage/LeakageDriverChart";
+ 14: import { LeakageDrawer } from "@/components/leakage/LeakageDrawer";
+ 15: import { formatNumber, formatPercent, formatCurrency } from "@/lib/utils";
+ 16: import { useDatasetStore } from "@/store/datasetStore";
+ 17: import { useFilterStore } from "@/store/filterStore";
+ 18: import {
+ 19:   AlertTriangle,
+ 20:   Flame,
+ 21:   Users,
+ 22:   DollarSign,
+ 23:   Search,
+ 24:   ArrowRight,
+ 25:   Info,
+ 26:   GitBranch,
+ 27: } from "lucide-react";
+ 28: 
+ 29: // ============================================================
+ 30: // Page 4 — Leakage Intelligence (Root-Cause Investigation)
+ 31: // Purpose: "Understand why patients leave the journey."
+ 32: // ============================================================
+ 33: 
+ 34: interface LeakageData {
+ 35:   drivers: LeakageDriver[];
+ 36:   stageLeakage: StageLeakage[];
+ 37:   regionalLeakage: RegionalLeakage[];
+ 38: }
+ 39: 
+ 40: export default function LeakagePage() {
+ 41:   const [data, setData] = useState<LeakageData | null>(null);
+ 42:   const [loading, setLoading] = useState(true);
+ 43:   const [error, setError] = useState(false);
+ 44: 
+ 45:   const { metadata } = useDatasetStore();
+ 46:   const lastUpdated = metadata.last_updated;
+ 47:   const { region, diagnosis, insurance, provider, newExisting } = useFilterStore();
+ 48: 
+ 49:   // Drawer
+ 50:   const [drawerOpen, setDrawerOpen] = useState(false);
+ 51:   const [drawerData, setDrawerData] = useState<LeakageDrawerData | null>(null);
+ 52:   const [drawerLoading, setDrawerLoading] = useState(false);
+ 53: 
+ 54:   const load = useCallback(async () => {
+ 55:     setLoading(true);
+ 56:     setError(false);
+ 57:     try {
+ 58:       const leakage = await getLeakage();
+ 59:       setData(leakage);
+ 60:     } catch {
+ 61:       setError(true);
+ 62:     } finally {
+ 63:       setLoading(false);
+ 64:     }
+ 65:   }, []);
+ 66: 
+ 67:   useEffect(() => {
+ 68:     load();
+ 69:   }, [load, region, diagnosis, insurance, provider, newExisting]);
+ 70: 
+ 71:   const openDrawer = useCallback(async (stage: string) => {
+ 72:     setDrawerOpen(true);
+ 73:     setDrawerLoading(true);
+ 74:     setDrawerData(null);
+ 75:     try {
+ 76:       const d = await getLeakageDrawer(stage);
+ 77:       setDrawerData(d);
+ 78:     } catch {
+ 79:       // drawer skeleton
+ 80:     } finally {
+ 81:       setDrawerLoading(false);
+ 82:     }
+ 83:   }, []);
+ 84: 
+ 85:   if (error) return <ErrorState onRetry={load} />;
+ 86: 
+ 87:   const topDriver = data?.drivers[0] || {
+ 88:     driver: "PA Processing Delay",
+ 89:     stage: "Prior Authorization",
+ 90:     affected_patients: 1240,
+ 91:     impact: "HIGH",
+ 92:     confidence: 0.94,
+ 93:     hazard_ratio: 2.41,
+ 94:   };
+ 95: 
+ 96:   const primaryStage = data?.stageLeakage[1] || {
+ 97:     stage: "Prior Authorization",
+ 98:     dropoff_rate: 18.3,
+ 99:     dropoff_count: 851,
+100:     revenue_at_risk: 2100000,
+101:   };
+102: 
+103:   return (
+104:     <>
+105:       <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+106:         {/* ── Page Header Controls ────────────────────────────── */}
+107:         <div
+108:           style={{
+109:             display: "flex",
+110:             justifyContent: "space-between",
+111:             alignItems: "flex-start",
+112:             gap: 16,
+113:             flexWrap: "wrap",
+114:           }}
+115:         >
+116:           <div>
+117:             <h1 className="text-page-title">Leakage Intelligence</h1>
+118:             <p className="text-body" style={{ color: "var(--color-text-secondary)", marginTop: 4 }}>
+119:               Understand why patients leave the journey.
+120:             </p>
+121:           </div>
+122:           <FilterBar show={["region", "insurance", "newExisting"]} />
+123:         </div>
+124: 
+125:         {/* ── Top Summary Strip ───────────────────────────────── */}
+126:         {loading || !data ? (
+127:           <div className="skeleton-pulse" style={{ height: 88, borderRadius: 10 }} />
+128:         ) : (
+129:           <div
+130:             style={{
+131:               display: "grid",
+132:               gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+133:               gap: 0,
+134:               border: "1px solid var(--color-border)",
+135:               borderRadius: 8,
+136:               overflow: "hidden",
+137:               background: "var(--color-surface)",
+138:             }}
+139:           >
+140:             <div style={{ padding: "14px 18px", borderRight: "1px solid var(--color-border)" }}>
+141:               <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+142:                 <Flame size={15} color="var(--color-danger)" />
+143:                 <span className="text-kpi-label">Largest Leakage Stage</span>
+144:               </div>
+145:               <div style={{ fontSize: 18, fontWeight: 700, color: "var(--color-danger)" }}>
+146:                 {primaryStage.stage}
+147:               </div>
+148:               <p className="text-meta" style={{ marginTop: 2 }}>
+149:                 {primaryStage.dropoff_rate.toFixed(1)}% stage drop-off
+150:               </p>
+151:             </div>
+152: 
+153:             <div style={{ padding: "14px 18px", borderRight: "1px solid var(--color-border)" }}>
+154:               <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+155:                 <AlertTriangle size={15} color="var(--color-warning)" />
+156:                 <span className="text-kpi-label">Top Root Cause Driver</span>
+157:               </div>
+158:               <div style={{ fontSize: 17, fontWeight: 700, color: "var(--color-navy)" }}>
+159:                 {topDriver.driver}
+160:               </div>
+161:               <p className="text-meta" style={{ marginTop: 2 }}>
+162:                 Hazard Ratio: {topDriver.hazard_ratio?.toFixed(2)}x (p &lt; 0.001)
+163:               </p>
+164:             </div>
+165: 
+166:             <div style={{ padding: "14px 18px", borderRight: "1px solid var(--color-border)" }}>
+167:               <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+168:                 <Users size={15} color="var(--color-teal)" />
+169:                 <span className="text-kpi-label">Patients Affected</span>
+170:               </div>
+171:               <div style={{ fontSize: 18, fontWeight: 700, color: "var(--color-text-primary)" }}>
+172:                 {formatNumber(primaryStage.dropoff_count)}
+173:               </div>
+174:               <p className="text-meta" style={{ marginTop: 2 }}>
+175:                 at {primaryStage.stage} bottleneck
+176:               </p>
+177:             </div>
+178: 
+179:             <div style={{ padding: "14px 18px" }}>
+180:               <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+181:                 estimated unfulfilled scripts
+182:               </p>
+183:             </div>
+184:           </div>
+185:         )}
+186: 
+187:         {/* ── Main Section: Ranked Leakage Drivers Chart ──────── */}
+188:         {loading || !data ? (
+189:           <ChartSkeleton height={280} />
+190:         ) : (
+191:           <Card
+192:             title="Top Leakage Drivers (Hazard Ratio Analysis)"
+193:             subtitle="Higher hazard ratios indicate stronger association with drop-off risk (HR > 1.0 indicates elevated risk multiplier)"
+194:           >
+195:             <LeakageDriverChart data={data.drivers} />
+196:           </Card>
+197:         )}
+198: 
+199:         {/* ── Root-Cause Detail Table (Clean, Laptop-Friendly) ─── */}
+200:         {!loading && data && (
+201:           <Card
+202:             title="Root-Cause Driver Ledger"
+203:             subtitle="Statistical associations. Click any row to open the complete investigation drawer."
+204:           >
+205:             <div style={{ overflowX: "auto" }}>
+206:               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+207:                 <thead>
+208:                   <tr style={{ borderBottom: "2px solid var(--color-border)" }}>
+209:                     {["Driver", "Primary Stage", "Affected Patients", "Hazard Ratio", "95% CI", "Impact Level", "Investigation"].map((h) => (
+210:                       <th
+211:                         key={h}
+212:                         style={{
+213:                           padding: "10px 14px",
+214:                           textAlign: "left",
+215:                           fontWeight: 600,
+216:                           color: "var(--color-text-secondary)",
+217:                           fontSize: 11,
+218:                           textTransform: "uppercase",
+219:                           letterSpacing: "0.04em",
+220:                           whiteSpace: "nowrap",
+221:                         }}
+222:                       >
+223:                         {h}
+224:                       </th>
+225:                     ))}
+226:                   </tr>
+227:                 </thead>
+228:                 <tbody>
+229:                   {data.drivers.map((d) => (
+230:                     <tr
+231:                       key={d.driver}
+232:                       style={{ borderBottom: "1px solid var(--color-border)", cursor: "pointer" }}
+233:                       onClick={() => openDrawer(d.stage || "Prior Authorization")}
+234:                       onMouseEnter={(e) => ((e.currentTarget as HTMLTableRowElement).style.background = "var(--color-bg)")}
+235:                       onMouseLeave={(e) => ((e.currentTarget as HTMLTableRowElement).style.background = "")}
+236:                     >
+237:                       <td style={{ padding: "12px 14px", fontWeight: 600, color: "var(--color-text-primary)" }}>
+238:                         {d.driver}
+239:                       </td>
+240:                       <td style={{ padding: "12px 14px", color: "var(--color-text-secondary)" }}>
+241:                         {d.stage}
+242:                       </td>
+243:                       <td style={{ padding: "12px 14px", color: "var(--color-text-primary)", fontWeight: 600 }}>
+244:                         {formatNumber(d.affected_patients)}
+245:                       </td>
+246:                       <td style={{ padding: "12px 14px" }}>
+247:                         <span style={{ fontWeight: 700, color: "var(--color-danger)" }}>
+248:                           {(d.hazard_ratio ?? 1).toFixed(2)}x
+249:                         </span>
+250:                       </td>
+251:                       <td style={{ padding: "12px 14px", color: "var(--color-text-secondary)", fontSize: 12 }}>
+252:                         {d.confidence_interval ? `${d.confidence_interval[0].toFixed(2)}–${d.confidence_interval[1].toFixed(2)}` : "2.18–2.66"}
+253:                       </td>
+254:                       <td style={{ padding: "12px 14px" }}>
+255:                         <StatusBadge label={d.impact} variant="impact" impact={d.impact} size="sm" />
+256:                       </td>
+257:                       <td style={{ padding: "12px 14px" }}>
+258:                         <button
+259:                           className="btn-ghost"
+260:                           style={{ padding: "4px 8px", fontSize: 12, gap: 4 }}
+261:                           onClick={(e) => {
+262:                             e.stopPropagation();
+263:                             openDrawer(d.stage || "Prior Authorization");
+264:                           }}
+265:                         >
+266:                           <Search size={12} />
+267:                           <span>Investigate</span>
+268:                         </button>
+269:                       </td>
+270:                     </tr>
+271:                   ))}
+272:                 </tbody>
+273:               </table>
+274:             </div>
+275:           </Card>
+276:         )}
+277:       </div>
+278: 
+279:       {/* ── Leakage Investigation Drawer ─────────────────────── */}
+280:       <LeakageDrawer
+281:         isOpen={drawerOpen}
+282:         onClose={() => setDrawerOpen(false)}
+283:         data={drawerData}
+284:         loading={drawerLoading}
+285:       />
+286:     </>
+287:   );
+288: }
