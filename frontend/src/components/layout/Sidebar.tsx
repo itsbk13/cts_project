@@ -72,7 +72,7 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { label: "Journey Funnel",   href: "/funnel",    icon: GitMerge,      badge: null     },
       { label: "Cohort Analysis",  href: "/cohorts",   icon: ClipboardList, badge: null     },
-      { label: "Leakage Analysis", href: "/leakage",   icon: Droplets,      badge: "18.3%" },
+      { label: "Leakage Analysis", href: "/leakage",   icon: Droplets,      badge: undefined },
       { label: "Survival",         href: "/survival",  icon: TrendingDown,  badge: null     },
     ],
   },
@@ -80,7 +80,7 @@ const NAV_SECTIONS: NavSection[] = [
     label: "Patient Intelligence",
     defaultOpen: true,
     items: [
-      { label: "Risk Monitor",     href: "/risk",  icon: AlertTriangle, badge: "312" },
+      { label: "Risk Monitor",     href: "/risk",  icon: AlertTriangle, badge: undefined },
       { label: "SHAP Explain.",    href: "/shap",  icon: BarChart2,     badge: null  },
     ],
   },

@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";
-import { getRiskOverview, getRiskPatients, getPatientRisk } from "@/lib/api";
+import { getRiskOverview, getPatientRisk } from "@/lib/api";
 import type { RiskOverviewKPIs, RiskDistributionPoint, RiskPatient, PatientRiskDetail } from "@/types/risk";
 
-import { FilterBar } from "@/components/common/FilterBar";
+
 import { Card } from "@/components/common/Card";
 import { KPICard } from "@/components/common/KPICard";
 import { ErrorState } from "@/components/common/ErrorState";
@@ -25,7 +25,6 @@ import { useFilterStore } from "@/store/filterStore";
 export default function RiskMonitorPage() {
   const [kpis, setKpis] = useState<RiskOverviewKPIs | null>(null);
   const [distribution, setDistribution] = useState<RiskDistributionPoint[]>([]);
-  const [patients, setPatients] = useState<RiskPatient[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const lastUpdated = useDatasetStore((s) => s.metadata.last_updated);
@@ -46,13 +45,9 @@ export default function RiskMonitorPage() {
     setLoading(true);
     setError(false);
     try {
-      const [overviewRes, patientList] = await Promise.all([
-        getRiskOverview(),
-        getRiskPatients(),
-      ]);
+      const overviewRes = await getRiskOverview();
       setKpis(overviewRes.kpis);
       setDistribution(overviewRes.distribution);
-      setPatients(patientList);
     } catch {
       setError(true);
     } finally {
@@ -119,7 +114,7 @@ export default function RiskMonitorPage() {
               Identify active patients who may drop next.
             </p>
           </div>
-          <FilterBar show={["region", "insurance", "newExisting"]} />
+          
         </div>
 
         {/* ── ANALYZE A PATIENT SECTION ───────────────────────── */}
@@ -199,7 +194,7 @@ export default function RiskMonitorPage() {
                             : "var(--color-success)",
                       }}
                     >
-                      {lookupResult.risk_score}%
+                      {lookupResult.risk_score <= 1 ? (lookupResult.risk_score * 100).toFixed(1).replace(/\.0$/, '') : Number(lookupResult.risk_score).toFixed(1).replace(/\.0$/, '')}%
                     </div>
                   </div>
 
@@ -386,10 +381,7 @@ export default function RiskMonitorPage() {
             title="Priority Intervention Queue"
             subtitle="Sorted by highest drop-off risk score. Click any patient to inspect their journey timeline and SHAP explanation."
           >
-            <RiskTable
-              patients={patients}
-              onSelectPatient={handleSelectPatient}
-            />
+            <RiskTable onSelectPatient={handleSelectPatient} />
           </Card>
         )}
       </div>

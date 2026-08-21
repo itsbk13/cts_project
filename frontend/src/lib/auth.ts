@@ -60,14 +60,16 @@ export async function login(
   if (isDemoMode) {
     // ── Demo authentication (hackathon development) ─────────────
     // Accepts any non-empty credentials. Replace with real auth when ready.
-    const orgName = organization.trim() || "Demo Healthcare Center";
+    const orgName = organization.trim() || "National Hospital";
+    const hId = userId.trim().toUpperCase().startsWith("USER-") ? userId.trim() : "USER-114537";
     session = {
       organization: orgName,
-      userId: userId.trim() || "user@hospital.com",
+      userId: userId.trim() || "user@nationalhospital.com",
       userName: userId.trim() || "Demo User",
       hospitalName: orgName,
-      hospitalId: userId.trim().toUpperCase().startsWith("USER-") ? userId.trim() : `HSP-${Math.floor(1000 + Math.random() * 9000)}`,
+      hospitalId: hId,
       role: "Analyst",
+      accessToken: hId, // Crucial: passes hospitalId directly to backend since get_hospital_id accepts raw tokens
       isAuthenticated: true,
       loginTime: new Date().toISOString(),
     };
@@ -116,6 +118,12 @@ export function getCurrentUser(): UserSession | null {
   if (!stored) return null;
   try {
     const session: UserSession = JSON.parse(stored);
+    
+    // Auto-patch demo mode sessions missing an access token so they can access the backend without re-logging in
+    if (isDemoMode && session.isAuthenticated && !session.accessToken && session.hospitalId) {
+      session.accessToken = session.hospitalId;
+    }
+    
     return session.isAuthenticated ? session : null;
   } catch {
     return null;

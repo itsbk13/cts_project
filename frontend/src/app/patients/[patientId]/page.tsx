@@ -174,7 +174,11 @@ export default function PatientDetailPage() {
                 Risk Score
               </div>
               <div style={{ fontSize: 36, fontWeight: 800, color: riskStyle!.color, lineHeight: 1 }}>
-                {patient.risk_score}%
+                {typeof patient.risk_score === 'number' 
+                   ? (patient.risk_score <= 1 
+                        ? (patient.risk_score * 100).toFixed(1).replace(/\.0$/, '') 
+                        : Number(patient.risk_score).toFixed(1).replace(/\.0$/, ''))
+                   : patient.risk_score}%
               </div>
               <div
                 style={{
@@ -250,7 +254,7 @@ export default function PatientDetailPage() {
                                 border: `1px solid ${rStyle.border}`,
                               }}
                             >
-                              {event.risk_level} · {event.risk_score}%
+                              {event.risk_level} · {typeof event.risk_score === 'number' && event.risk_score <= 1 ? (event.risk_score * 100).toFixed(1).replace(/\.0$/, '') : Number(event.risk_score).toFixed(1).replace(/\.0$/, '')}%
                             </span>
                           )}
                         </div>

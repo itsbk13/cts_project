@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import type { RiskPatient } from "@/types/risk";
 import { StatusBadge } from "@/components/common/StatusBadge";
-import { Search, ChevronRight, ArrowUpDown, Filter, SlidersHorizontal } from "lucide-react";
+import { Search, ChevronRight, ChevronLeft, ArrowUpDown, Loader2 } from "lucide-react";
+import { getRiskPatients } from "@/lib/api";
+import { useFilterStore } from "@/store/filterStore";
 
 // ============================================================
 // RiskTable — Operational Intervention Workspace Table
@@ -11,46 +13,68 @@ import { Search, ChevronRight, ArrowUpDown, Filter, SlidersHorizontal } from "lu
 // ============================================================
 
 interface RiskTableProps {
-  patients: RiskPatient[];
   onSelectPatient: (patientId: string) => void;
 }
 
-export function RiskTable({ patients, onSelectPatient }: RiskTableProps) {
+export function RiskTable({ onSelectPatient }: RiskTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [riskCategoryFilter, setRiskCategoryFilter] = useState<string>("HIGH_ONLY");
+  const [riskCategoryFilter, setRiskCategoryFilter] = useState<string>("ALL");
   const [stageFilter, setStageFilter] = useState<string>("ALL");
-  const [minScore, setMinScore] = useState<number>(0);
-  const [sortField, setSortField] = useState<"risk_score" | "days_in_current_stage">("risk_score");
+  const [sortField, setSortField] = useState<"risk_score" | "days_in_current_stage" | "patient_id">("risk_score");
   const [sortAsc, setSortAsc] = useState(false);
+  const [minScore, setMinScore] = useState(0);
 
-  // Filter logic
-  const filtered = patients.filter((p) => {
-    const matchesSearch =
-      p.patient_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.top_risk_driver.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.region.toLowerCase().includes(searchTerm.toLowerCase());
+  const [page, setPage] = useState(1);
+  const [patients, setPatients] = useState<RiskPatient[]>([]);
+  const [total, setTotal] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
 
-    const matchesCategory =
-      riskCategoryFilter === "ALL"
-        ? true
-        : riskCategoryFilter === "HIGH_ONLY"
-        ? p.risk_category === "HIGH"
-        : p.risk_category === riskCategoryFilter;
+  // Listen to global filters so we refetch if they change!
+  const region = useFilterStore((s) => s.region);
+  const insurance = useFilterStore((s) => s.insurance);
+  const diagnosis = useFilterStore((s) => s.diagnosis);
+  const provider = useFilterStore((s) => s.provider);
+  const newExisting = useFilterStore((s) => s.newExisting);
 
-    const matchesStage = stageFilter === "ALL" || p.current_stage === stageFilter;
-    const matchesMinScore = p.risk_score >= minScore;
+  // Use a debounced search term for API fetching
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
-    return matchesSearch && matchesCategory && matchesStage && matchesMinScore;
-  });
+  useEffect(() => {
+    let active = true;
+    const fetchPatients = async () => {
+      setIsLoading(true);
+      const res = await getRiskPatients({
+        page,
+        limit: 50,
+        search: debouncedSearch,
+        stage: stageFilter,
+        min_score: minScore,
+        risk_category: riskCategoryFilter,
+        sort_field: sortField,
+        sort_dir: sortAsc ? "asc" : "desc",
+        region,
+        insurance
+      });
+      if (active) {
+        setPatients(res.data);
+        setTotal(res.total);
+        setIsLoading(false);
+      }
+    };
+    fetchPatients();
+    return () => { active = false; };
+  }, [page, debouncedSearch, stageFilter, minScore, riskCategoryFilter, sortField, sortAsc, region, insurance, diagnosis, provider, newExisting]);
 
-  // Sort logic
-  const sorted = [...filtered].sort((a, b) => {
-    const valA = a[sortField];
-    const valB = b[sortField];
-    return sortAsc ? valA - valB : valB - valA;
-  });
+  // If filters change (other than page), reset to page 1
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, stageFilter, minScore, riskCategoryFilter, sortField, sortAsc, region, insurance, diagnosis, provider, newExisting]);
 
-  const handleSort = (field: "risk_score" | "days_in_current_stage") => {
+  const handleSort = (field: "risk_score" | "days_in_current_stage" | "patient_id") => {
     if (sortField === field) {
       setSortAsc(!sortAsc);
     } else {
@@ -185,9 +209,14 @@ export function RiskTable({ patients, onSelectPatient }: RiskTableProps) {
                   fontSize: 11,
                   textTransform: "uppercase",
                   letterSpacing: "0.04em",
+                  cursor: "pointer",
                 }}
+                onClick={() => handleSort("patient_id")}
               >
-                Patient ID
+                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  Patient ID
+                  <ArrowUpDown size={12} />
+                </div>
               </th>
               <th
                 style={{
@@ -293,14 +322,21 @@ export function RiskTable({ patients, onSelectPatient }: RiskTableProps) {
             </tr>
           </thead>
           <tbody>
-            {sorted.length === 0 ? (
+            {isLoading ? (
+              <tr>
+                <td colSpan={8} style={{ padding: "60px", textAlign: "center", color: "var(--color-text-muted)" }}>
+                  <Loader2 className="animate-spin" size={24} style={{ margin: "0 auto 10px" }} />
+                  Loading patient records...
+                </td>
+              </tr>
+            ) : patients.length === 0 ? (
               <tr>
                 <td colSpan={8} style={{ padding: "32px", textAlign: "center", color: "var(--color-text-muted)" }}>
                   No patients match the current risk thresholds. Adjust minimum score or stage filters.
                 </td>
               </tr>
             ) : (
-              sorted.map((patient) => (
+              patients.map((patient) => (
                 <tr
                   key={patient.patient_id}
                   onClick={() => onSelectPatient(patient.patient_id)}
@@ -346,7 +382,7 @@ export function RiskTable({ patients, onSelectPatient }: RiskTableProps) {
                         />
                       </div>
                       <span style={{ fontWeight: 700, fontSize: 13 }}>
-                        {patient.risk_score}%
+                        {patient.risk_score <= 1 ? (patient.risk_score * 100).toFixed(1).replace(/\.0$/, '') : Number(patient.risk_score).toFixed(1).replace(/\.0$/, '')}%
                       </span>
                     </div>
                   </td>
@@ -382,6 +418,31 @@ export function RiskTable({ patients, onSelectPatient }: RiskTableProps) {
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* ── Pagination Controls ─────────────────────────────── */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px", borderTop: "1px solid var(--color-border)", background: "var(--color-surface)" }}>
+        <div style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>
+          Showing {patients.length > 0 ? (page - 1) * 50 + 1 : 0} to {Math.min(page * 50, total)} of {total} patients
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            className="btn-secondary"
+            disabled={page === 1}
+            onClick={() => setPage(page - 1)}
+            style={{ padding: "6px 12px", fontSize: 12 }}
+          >
+            <ChevronLeft size={14} /> Previous
+          </button>
+          <button
+            className="btn-secondary"
+            disabled={page * 50 >= total}
+            onClick={() => setPage(page + 1)}
+            style={{ padding: "6px 12px", fontSize: 12 }}
+          >
+            Next <ChevronRight size={14} />
+          </button>
+        </div>
       </div>
     </div>
   );

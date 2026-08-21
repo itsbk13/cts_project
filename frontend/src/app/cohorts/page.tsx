@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { getCohorts, getLeakage } from "@/lib/api";
 import type { CohortHeatmapCell, CohortComparison, RegionalLeakage } from "@/types/analytics";
 
-import { FilterBar } from "@/components/common/FilterBar";
+
 import { Card } from "@/components/common/Card";
 import { ErrorState } from "@/components/common/ErrorState";
 import { ChartSkeleton } from "@/components/common/LoadingSkeleton";
@@ -88,7 +88,7 @@ export default function CohortsPage() {
             Compare journey outcomes across patient segments and regions.
           </p>
         </div>
-        <FilterBar show={["region", "insurance", "diagnosis", "provider", "newExisting"]} />
+        
       </div>
 
       {/* ─── MAIN HERO: Acquisition Cohort Analysis Heatmap ─── */}
@@ -115,7 +115,7 @@ export default function CohortsPage() {
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
                 <tr style={{ borderBottom: "2px solid var(--color-border)" }}>
-                  {["Region", "Patients", "First Fill Rate", "Drop-off Rate", "Status"].map((h) => (
+                  {["Region", "Patients", "First Fill Rate", "Drop-off Rate"].map((h) => (
                     <th
                       key={h}
                       style={{
@@ -161,26 +161,12 @@ export default function CohortsPage() {
                       <td style={{ padding: "12px 14px", fontWeight: 700, color: isCritical ? "var(--color-danger)" : isAttention ? "var(--color-warning)" : "var(--color-text-primary)" }}>
                         {r.dropoffRate.toFixed(1)}%
                       </td>
-                      <td style={{ padding: "12px 14px" }}>
-                        <span
-                          style={{
-                            padding: "3px 8px",
-                            borderRadius: 4,
-                            fontSize: 11,
-                            fontWeight: 600,
-                            color: badgeColor,
-                            background: badgeBg,
-                          }}
-                        >
-                          {r.status}
-                        </span>
-                      </td>
                     </tr>
                   );
                 })}
                 {regionalRows.length === 0 && (
                   <tr>
-                    <td colSpan={5} style={{ padding: "20px", textAlign: "center", color: "var(--color-text-secondary)" }}>
+                    <td colSpan={4} style={{ padding: "20px", textAlign: "center", color: "var(--color-text-secondary)" }}>
                       No regional data available.
                     </td>
                   </tr>

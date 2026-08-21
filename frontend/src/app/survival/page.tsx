@@ -4,13 +4,14 @@ import React, { useEffect, useState, useCallback } from "react";
 import { getSurvival } from "@/lib/api";
 import type { SurvivalData } from "@/types/analytics";
 
-import { FilterBar } from "@/components/common/FilterBar";
+
 import { Card } from "@/components/common/Card";
 import { ErrorState } from "@/components/common/ErrorState";
 import { ChartSkeleton } from "@/components/common/LoadingSkeleton";
 import { KaplanMeierChart } from "@/components/survival/KaplanMeierChart";
 import { formatPercent } from "@/lib/utils";
 import { Clock, ShieldAlert, CheckCircle2, TrendingDown, ArrowRight } from "lucide-react";
+import { StatusBadge } from "@/components/common/StatusBadge";
 import { useDatasetStore } from "@/store/datasetStore";
 import { useFilterStore } from "@/store/filterStore";
 
@@ -72,7 +73,7 @@ export default function SurvivalPage() {
             Understand when patients are most likely to drop off.
           </p>
         </div>
-        <FilterBar show={["insurance", "region"]} />
+        
       </div>
 
       {/* ── Key Timepoint Survival Metric Bar ──────────────────── */}
@@ -109,7 +110,7 @@ export default function SurvivalPage() {
               <span className="text-kpi-label">30-Day Survival</span>
             </div>
             <div style={{ fontSize: 20, fontWeight: 700, color: "var(--color-success)" }}>
-              68.0%
+              {((data.key_timepoints.find(t => t.days === 30)?.probability || 0) * 100).toFixed(1)}%
             </div>
             <p className="text-meta" style={{ marginTop: 2 }}>
               Active in journey at 1 month
@@ -122,7 +123,7 @@ export default function SurvivalPage() {
               <span className="text-kpi-label">60-Day Survival</span>
             </div>
             <div style={{ fontSize: 20, fontWeight: 700, color: "var(--color-warning)" }}>
-              48.0%
+              {((data.key_timepoints.find(t => t.days === 60)?.probability || 0) * 100).toFixed(1)}%
             </div>
             <p className="text-meta" style={{ marginTop: 2 }}>
               Active in journey at 2 months
@@ -135,7 +136,7 @@ export default function SurvivalPage() {
               <span className="text-kpi-label">90-Day Survival</span>
             </div>
             <div style={{ fontSize: 20, fontWeight: 700, color: "var(--color-danger)" }}>
-              34.0%
+              {((data.key_timepoints.find(t => t.days === 90)?.probability || 0) * 100).toFixed(1)}%
             </div>
             <p className="text-meta" style={{ marginTop: 2 }}>
               Plateau conversion mark
@@ -144,8 +145,10 @@ export default function SurvivalPage() {
         </div>
       )}
 
-      {/* ── Visual Milestone Timeline ─────────────────────────── */}
-      <div
+      {data && (
+        <>
+          {/* ── Visual Milestone Timeline ─────────────────────────── */}
+          <div
         style={{
           padding: "14px 18px",
           background: "var(--color-surface)",
@@ -192,7 +195,7 @@ export default function SurvivalPage() {
             DAY 30
           </span>
           <span style={{ fontSize: 13, fontWeight: 600, color: "var(--color-teal)" }}>
-            68% Remaining
+            {((data?.key_timepoints?.find(t => t.days === 30)?.probability || 0) * 100).toFixed(0)}% Remaining
           </span>
         </div>
 
@@ -212,7 +215,7 @@ export default function SurvivalPage() {
             DAY 60
           </span>
           <span style={{ fontSize: 13, fontWeight: 600, color: "var(--color-warning)" }}>
-            48% Remaining
+            {((data?.key_timepoints?.find(t => t.days === 60)?.probability || 0) * 100).toFixed(0)}% Remaining
           </span>
         </div>
 
@@ -232,7 +235,7 @@ export default function SurvivalPage() {
             DAY 90
           </span>
           <span style={{ fontSize: 13, fontWeight: 600, color: "var(--color-danger)" }}>
-            34% Remaining
+            {((data?.key_timepoints?.find(t => t.days === 90)?.probability || 0) * 100).toFixed(0)}% Remaining
           </span>
         </div>
       </div>
@@ -258,7 +261,7 @@ export default function SurvivalPage() {
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
               <tr style={{ borderBottom: "2px solid var(--color-border)" }}>
-                {["Cohort", "Median Time to Drop-off", "30-Day Survival", "60-Day Survival", "Overall Drop-off Rate", "Risk Level"].map((h) => (
+                {["Cohort", "Median Time to Drop-off", "30-Day Survival", "60-Day Survival", "Overall Drop-off Rate"].map((h) => (
                   <th
                     key={h}
                     style={{
@@ -278,58 +281,43 @@ export default function SurvivalPage() {
               </tr>
             </thead>
             <tbody>
-              {cohortSurvivalStats.map((c) => (
-                <tr
-                  key={c.cohort}
-                  style={{ borderBottom: "1px solid var(--color-border)" }}
-                  onMouseEnter={(e) => ((e.currentTarget as HTMLTableRowElement).style.background = "var(--color-bg)")}
-                  onMouseLeave={(e) => ((e.currentTarget as HTMLTableRowElement).style.background = "")}
-                >
-                  <td style={{ padding: "12px 14px", fontWeight: 600, color: "var(--color-text-primary)" }}>
-                    {c.cohort}
-                  </td>
-                  <td style={{ padding: "12px 14px", color: "var(--color-text-secondary)" }}>
-                    {c.medianDays}
-                  </td>
-                  <td style={{ padding: "12px 14px", fontWeight: 600, color: "var(--color-success)" }}>
-                    {c.day30}
-                  </td>
-                  <td style={{ padding: "12px 14px", color: "var(--color-text-secondary)" }}>
-                    {c.day60}
-                  </td>
-                  <td style={{ padding: "12px 14px", fontWeight: 700, color: parseFloat(c.dropoff) > 45 ? "var(--color-danger)" : "var(--color-text-primary)" }}>
-                    {c.dropoff}
-                  </td>
-                  <td style={{ padding: "12px 14px" }}>
-                    <span
-                      style={{
-                        padding: "3px 8px",
-                        borderRadius: 4,
-                        fontSize: 11,
-                        fontWeight: 600,
-                        color:
-                          c.riskTier.includes("High") || c.riskTier.includes("Critical")
-                            ? "var(--color-danger)"
-                            : c.riskTier.includes("Moderate")
-                            ? "var(--color-warning)"
-                            : "var(--color-success)",
-                        background:
-                          c.riskTier.includes("High") || c.riskTier.includes("Critical")
-                            ? "var(--color-danger-bg)"
-                            : c.riskTier.includes("Moderate")
-                            ? "var(--color-warning-bg)"
-                            : "var(--color-success-bg)",
-                      }}
-                    >
-                      {c.riskTier}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
+                  {data.groups && data.groups.map((group, idx) => {
+                    if (group === 'Overall') return null;
+                    const groupCurve = data.curves.filter(c => c.group === group);
+                    if (groupCurve.length === 0) return null;
+                    
+                    const median = groupCurve.find(c => c.survival_probability <= 0.5)?.time || ">90";
+                    const s30 = groupCurve.find(c => c.time === 30)?.survival_probability || 0;
+                    const s60 = groupCurve.find(c => c.time === 60)?.survival_probability || 0;
+                    const finalS = groupCurve[groupCurve.length - 1]?.survival_probability || 0;
+                    
+                    return (
+                    <tr key={idx} style={{ borderBottom: "1px solid var(--color-border)" }}>
+                      <td style={{ padding: "12px 14px", fontWeight: 600, color: "var(--color-text-primary)" }}>
+                        {group}
+                      </td>
+                      <td style={{ padding: "12px 14px", color: "var(--color-text-secondary)" }}>
+                        {median} Days
+                      </td>
+                      <td style={{ padding: "12px 14px", color: "var(--color-text-primary)", fontWeight: 600 }}>
+                        {(s30 * 100).toFixed(1)}%
+                      </td>
+                      <td style={{ padding: "12px 14px" }}>
+                        <span style={{ fontWeight: 700, color: "var(--color-warning)" }}>
+                          {(s60 * 100).toFixed(1)}%
+                        </span>
+                      </td>
+                      <td style={{ padding: "12px 14px", color: "var(--color-text-secondary)", fontSize: 12 }}>
+                        {((1 - finalS) * 100).toFixed(1)}%
+                      </td>
+                    </tr>
+                  )})}
+                </tbody>
           </table>
-        </div>
-      </Card>
+            </div>
+          </Card>
+        </>
+      )}
     </div>
   );
 }

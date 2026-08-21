@@ -110,10 +110,13 @@ export async function getOverview(): Promise<{
     useDatasetStore.setState((state) => ({
       metadata: { ...state.metadata, patient_count: total }
     }));
-    const fillCount = analytics.funnel.patient_counts[5] ?? 0; // "First Fill" stage
+    const funnelStages = analytics.funnel.patient_counts;
+    const fillCount = funnelStages[funnelStages.length - 1] ?? 0; // "First Fill" stage
     const fillRate = total > 0 ? +((fillCount / total) * 100).toFixed(1) : 0;
     const dropRate = +(100 - fillRate).toFixed(1);
-    const highRisk = Math.round(total * 0.3);
+    
+    // We fetch the actual high risk count from getBackendRiskPatients in CommandCenterPage now
+    const highRisk = 0; 
     const active = total;
 
     const kpis: OverviewKPIs = {
@@ -131,32 +134,9 @@ export async function getOverview(): Promise<{
 
     const trend: TrendPoint[] = state.trend;
     return { kpis, outcomeDistribution, trend };
-  } catch {
-    // Fall back to mock data if no patients or backend error
-    await delay();
-    const filters = useFilterStore.getState();
-    const { countMultiplier, dropoffModifier } = calculateFilterImpact(filters);
-    const baseKPIs = state.overviewKPIs;
-    const filteredPatients = Math.max(50, Math.round(baseKPIs.total_patients * countMultiplier));
-    const filteredDropoffRate = Math.max(12, Math.min(85, +(baseKPIs.dropoff_rate + dropoffModifier).toFixed(1)));
-    const filteredFillRate = +(100 - filteredDropoffRate).toFixed(1);
-    const completedCount = Math.round(filteredPatients * (filteredFillRate / 100));
-    const droppedCount = filteredPatients - completedCount;
-    const kpis: OverviewKPIs = {
-      total_patients: filteredPatients,
-      first_fill_rate: filteredFillRate,
-      dropoff_rate: filteredDropoffRate,
-      high_risk_active: Math.round(droppedCount * 0.162),
-      revenue_at_risk: Math.round(droppedCount * 2642),
-    };
-    return {
-      kpis,
-      outcomeDistribution: [
-        { outcome: "Completed (First Fill)", count: completedCount, percentage: filteredFillRate },
-        { outcome: "Dropped Off", count: droppedCount, percentage: filteredDropoffRate },
-      ],
-      trend: state.trend,
-    };
+  } catch (err) {
+    console.error(err);
+    throw err;
   }
 }
 
@@ -193,30 +173,9 @@ export async function getFunnel(): Promise<FunnelData> {
       overall_conversion:
         total > 0 ? +((lastCount / total) * 100).toFixed(1) : 0,
     };
-  } catch {
-    // Fallback to mock data
-    await delay();
-    const state = useDatasetStore.getState();
-    const filters = useFilterStore.getState();
-    const { countMultiplier, dropoffModifier } = calculateFilterImpact(filters);
-    const total = Math.max(50, Math.round(state.funnelData.total_entered * countMultiplier));
-    const overallConversion = Math.max(15, Math.min(88, +(state.funnelData.overall_conversion - dropoffModifier).toFixed(1)));
-    const rxRate = Math.max(80, 93.0 - dropoffModifier * 0.1);
-    const paRate = Math.max(60, 81.7 - dropoffModifier * 0.4);
-    const copayRate = Math.max(65, 88.7 - dropoffModifier * 0.25);
-    const fillRate = Math.max(70, 91.1 - dropoffModifier * 0.25);
-    const rxCount = Math.round(total * (rxRate / 100));
-    const paCount = Math.round(rxCount * (paRate / 100));
-    const copayCount = Math.round(paCount * (copayRate / 100));
-    const firstFillCount = Math.round(copayCount * (fillRate / 100));
-    const stages: import("@/types/analytics").FunnelStage[] = [
-      { stage: "Diagnosis", patient_count: total, conversion_rate: 100, dropoff_rate: 0, dropoff_count: 0, average_time_days: null },
-      { stage: "Prescription", patient_count: rxCount, conversion_rate: +((rxCount / total) * 100).toFixed(1), dropoff_rate: +(((total - rxCount) / total) * 100).toFixed(1), dropoff_count: total - rxCount, average_time_days: 4.2 },
-      { stage: "Prior Authorization", patient_count: paCount, conversion_rate: +((paCount / rxCount) * 100).toFixed(1), dropoff_rate: +(((rxCount - paCount) / rxCount) * 100).toFixed(1), dropoff_count: rxCount - paCount, average_time_days: 12.8 },
-      { stage: "Copay", patient_count: copayCount, conversion_rate: +((copayCount / paCount) * 100).toFixed(1), dropoff_rate: +(((paCount - copayCount) / paCount) * 100).toFixed(1), dropoff_count: paCount - copayCount, average_time_days: 3.1 },
-      { stage: "First Fill", patient_count: firstFillCount, conversion_rate: +((firstFillCount / copayCount) * 100).toFixed(1), dropoff_rate: +(((copayCount - firstFillCount) / copayCount) * 100).toFixed(1), dropoff_count: copayCount - firstFillCount, average_time_days: 2.4 },
-    ];
-    return { stages, total_entered: total, total_completed: firstFillCount, overall_conversion: overallConversion };
+  } catch (err) {
+    console.error(err);
+    throw err;
   }
 }
 
@@ -296,48 +255,11 @@ export async function getLeakage(): Promise<{
         regionalLeakage: regional
       };
     }
+    return { drivers: [], stageLeakage: [], regionalLeakage: [] };
   } catch (err) {
     console.error("Backend leakage fetch failed:", err);
-      throw err;
+    throw err;
   }
-
-  let regionalLeakage = state.regionalLeakage.map((r) => {
-    const isSelected = filters.region !== "All" && r.region.toLowerCase() === filters.region.toLowerCase();
-    const drop = isSelected || filters.region === "All" ? +(r.dropoff_rate + dropoffModifier).toFixed(1) : r.dropoff_rate;
-    const pts = Math.max(20, Math.round(r.patient_count * (filters.insurance !== "All" ? 0.4 : 1)));
-    return {
-      ...r,
-      dropoff_rate: Math.max(10, Math.min(80, drop)),
-      patient_count: pts,
-      revenue_at_risk: Math.round(pts * (drop / 100) * 2400),
-    };
-  });
-
-  if (filters.region !== "All") {
-    regionalLeakage = regionalLeakage.filter((r) => r.region.toLowerCase() === filters.region.toLowerCase());
-  }
-
-  const stageLeakage = state.stageLeakage.map((s) => {
-    const drop = Math.max(5, Math.min(70, +(s.dropoff_rate + dropoffModifier * 0.4).toFixed(1)));
-    const pts = Math.max(10, Math.round(s.dropoff_count * countMultiplier));
-    return {
-      ...s,
-      dropoff_rate: drop,
-      dropoff_count: pts,
-      revenue_at_risk: Math.round(pts * 2500),
-    };
-  });
-
-  const drivers = state.leakageDrivers.map((d) => ({
-    ...d,
-    affected_patients: Math.max(10, Math.round(d.affected_patients * countMultiplier)),
-  }));
-
-  return {
-    drivers,
-    stageLeakage,
-    regionalLeakage,
-  };
 }
 
 export async function getLeakageDrawer(stage: string): Promise<LeakageDrawerData> {
@@ -366,19 +288,11 @@ export async function getSurvival(): Promise<SurvivalData> {
         curves: backendData.survival.curves.filter((c) => groups.includes(c.group))
       } as SurvivalData;
     }
+    return { curves: [], median_survival_days: 0, key_timepoints: [], groups: [] } as any;
   } catch (err) {
-    console.error("Backend survival fetch failed"); throw new Error("Backend survival fetch failed");
+    console.error("Backend survival fetch failed:", err);
+    throw err;
   }
-
-  let groups = state.survivalData.groups;
-  if (filters.insurance !== "All") {
-    groups = ["Overall", filters.insurance];
-  }
-
-  return {
-    ...state.survivalData,
-    groups,
-  };
 }
 
 // ── Risk ─────────────────────────────────────────────────────
@@ -388,79 +302,58 @@ export async function getRiskOverview(): Promise<{
   distribution: RiskDistributionPoint[];
 }> {
   try {
-    const backendPatients = await getBackendRiskPatients();
-    if (backendPatients.length > 0) {
-      const high = backendPatients.filter((p) => p.risk_category === "HIGH").length;
-      const low = backendPatients.filter((p) => p.risk_category === "LOW").length;
-      const active = backendPatients.length;
+    const analytics = await getBackendAnalytics();
+    
+    // We now fetch the aggregated risk scores directly from the unified backend
+    // This perfectly matches the patient list data since it's computed on the exact same patient_master
+    const total = analytics.overview.total_patients;
+    const overviewAny = analytics.overview as any;
+    const high = overviewAny.high_risk || 0;
+    const med = overviewAny.medium_risk || 0;
+    const low = overviewAny.low_risk || 0;
+    const active = high + med + low;
+    
+    if (active > 0) {
       return {
-        kpis: { active_patients: active, high_risk: high, medium_risk: 0, low_risk: low },
+        kpis: { active_patients: active, high_risk: high, medium_risk: med, low_risk: low },
         distribution: [
-          { category: "LOW", count: low, percentage: active > 0 ? +((low / active) * 100).toFixed(1) : 0 },
-          { category: "HIGH", count: high, percentage: active > 0 ? +((high / active) * 100).toFixed(1) : 0 },
+          { category: "LOW", count: low, percentage: +((low / active) * 100).toFixed(1) },
+          { category: "MEDIUM", count: med, percentage: +((med / active) * 100).toFixed(1) },
+          { category: "HIGH", count: high, percentage: +((high / active) * 100).toFixed(1) },
         ],
       };
     }
-  } catch {
-    // fall through to mock
+    
+    // Fallback if no patients
+    return {
+      kpis: { active_patients: 0, high_risk: 0, medium_risk: 0, low_risk: 0 },
+      distribution: []
+    };
+  } catch (err) {
+    console.error("Backend risk fetch failed:", err);
+    throw err;
   }
-  // Fallback to mock data when no patients registered
-  await delay();
-  const state = useDatasetStore.getState();
-  const filters = useFilterStore.getState();
-  const { countMultiplier } = calculateFilterImpact(filters);
-  const hasFilters = filters.region !== "All" || filters.insurance !== "All" || filters.diagnosis !== "All" || filters.provider !== "All" || filters.newExisting !== "All";
-  const high = hasFilters ? Math.max(5, Math.round(state.riskKPIs.high_risk * countMultiplier)) : state.riskKPIs.high_risk;
-  const med = hasFilters ? Math.max(10, Math.round(state.riskKPIs.medium_risk * countMultiplier)) : state.riskKPIs.medium_risk;
-  const low = hasFilters ? Math.max(15, Math.round(state.riskKPIs.low_risk * countMultiplier)) : state.riskKPIs.low_risk;
-  const active = high + med + low;
-  return {
-    kpis: { active_patients: active, high_risk: high, medium_risk: med, low_risk: low },
-    distribution: [
-      { category: "LOW", count: low, percentage: +((low / active) * 100).toFixed(1) },
-      { category: "MEDIUM", count: med, percentage: +((med / active) * 100).toFixed(1) },
-      { category: "HIGH", count: high, percentage: +((high / active) * 100).toFixed(1) },
-    ],
-  };
 }
 
-export async function getRiskPatients(): Promise<RiskPatient[]> {
+export async function getRiskPatients(params: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  stage?: string;
+  min_score?: number;
+  risk_category?: string;
+  sort_field?: string;
+  sort_dir?: string;
+  region?: string;
+  insurance?: string;
+} = {}): Promise<{ data: RiskPatient[], total: number }> {
   try {
-    const backendPatients = await getBackendRiskPatients();
-    if (backendPatients.length > 0) {
-      const filters = useFilterStore.getState();
-      let patients = backendPatients;
-      if (filters.region !== "All") {
-        patients = patients.filter((p) => p.region.toLowerCase() === filters.region.toLowerCase());
-      }
-      if (filters.insurance !== "All") {
-        patients = patients.filter((p) => p.insurance_type.toLowerCase() === filters.insurance.toLowerCase());
-      }
-      return patients;
-    }
-  } catch {
-    // fall through to mock
+    const backendRes = await getBackendRiskPatients(params);
+    return { data: backendRes.data, total: backendRes.total };
+  } catch (error) {
+    console.error("Failed to fetch risk patients", error);
+    throw error;
   }
-  // Fallback to mock data when no patients registered
-  await delay();
-  const state = useDatasetStore.getState();
-  const filters = useFilterStore.getState();
-  let patients = state.riskPatients;
-  if (filters.region !== "All") {
-    patients = patients.filter((p) => p.region.toLowerCase() === filters.region.toLowerCase());
-  }
-  if (filters.insurance !== "All") {
-    patients = patients.filter((p) => p.insurance_type.toLowerCase() === filters.insurance.toLowerCase());
-  }
-  if (patients.length === 0) {
-    patients = state.riskPatients.slice(0, 10).map((p, idx) => ({
-      ...p,
-      patient_id: `PT-${String(30001 + idx)}`,
-      region: filters.region !== "All" ? filters.region : p.region,
-      insurance_type: filters.insurance !== "All" ? filters.insurance : p.insurance_type,
-    }));
-  }
-  return patients;
 }
 
 
@@ -490,7 +383,7 @@ export async function getPatientRisk(patientId: string): Promise<PatientRiskDeta
     return {
       patient_id: data.patient_id || patientId,
       last_updated: data.last_updated,
-      risk_score: data.risk_score ? Math.round(data.risk_score * 100) : 0,
+      risk_score: data.risk_score ? data.risk_score : 0,
       risk_category: data.risk_level?.toUpperCase() === "HIGH" ? "HIGH" : data.risk_level?.toUpperCase() === "MEDIUM" ? "MEDIUM" : "LOW",
       current_stage: data.current_stage || "Diagnosis",
       days_in_current_stage: data.days_in_current_stage || 14,

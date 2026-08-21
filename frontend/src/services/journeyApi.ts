@@ -32,10 +32,7 @@ import { mockPatientEvents, generateMockRiskScore } from "@/lib/patientMockData"
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
-const isDemoMode =
-  process.env.NEXT_PUBLIC_DEMO_AUTH === "true" ||
-  process.env.NEXT_PUBLIC_DEMO_AUTH === undefined ||
-  process.env.NEXT_PUBLIC_DEMO_AUTH === "";
+const isDemoMode = process.env.NEXT_PUBLIC_DEMO_AUTH === "true";
 
 const delay = (ms = 120) => new Promise<void>((res) => setTimeout(res, ms));
 

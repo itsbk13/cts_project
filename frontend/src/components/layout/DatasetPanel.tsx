@@ -24,6 +24,7 @@ import { useDatasetStore } from "@/store/datasetStore";
 export function DatasetPanel() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { metadata, isLoading, error, uploadDataset, resetToDefault } = useDatasetStore();
+  const [uploadMode, setUploadMode] = React.useState<"append" | "overwrite">("overwrite");
 
   const handleUploadClick = () => {
     fileInputRef.current?.click();
@@ -32,7 +33,7 @@ export function DatasetPanel() {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      await uploadDataset(file);
+      await uploadDataset(file, uploadMode);
       // Reset input value so re-uploading the same file works
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -81,6 +82,30 @@ export function DatasetPanel() {
           >
             Dataset Control
           </span>
+        </div>
+
+        {/* Upload Mode Toggle */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
+          <label style={{ fontSize: 11, display: "flex", alignItems: "center", gap: 4, cursor: "pointer", color: "var(--color-text-secondary)" }}>
+            <input 
+              type="radio" 
+              name="panelUploadMode" 
+              value="overwrite" 
+              checked={uploadMode === "overwrite"} 
+              onChange={() => setUploadMode("overwrite")} 
+            />
+            Overwrite Existing
+          </label>
+          <label style={{ fontSize: 11, display: "flex", alignItems: "center", gap: 4, cursor: "pointer", color: "var(--color-text-secondary)" }}>
+            <input 
+              type="radio" 
+              name="panelUploadMode" 
+              value="append" 
+              checked={uploadMode === "append"} 
+              onChange={() => setUploadMode("append")} 
+            />
+            Append Data
+          </label>
         </div>
 
         {/* Upload button */}

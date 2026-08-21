@@ -18,16 +18,13 @@ import numpy as np
 # CONSTANTS
 # -----------------------------------------------------------
 
-# The 8 stages in order
+# The 5 stages in order (matches frontend JOURNEY_STAGES constant)
 STAGE_ORDER = {
-    "Diagnosis": 1,
-    "Prescription": 2,
-    "Prior Authorization": 3,
-    "Hub Enrollment": 4,
-    "Claim Approval": 5,
-    "Prescription Fill": 6,
-    "Treatment Initiation": 7,
-    "Follow-up": 8,
+    "Diagnosis":          1,
+    "Prescription":       2,
+    "Prior Authorization":3,
+    "Copay":              4,
+    "First Fill":         5,
 }
 
 REVERSE_STAGE_ORDER = {v: k for k, v in STAGE_ORDER.items()}
@@ -172,9 +169,9 @@ def build_stage_progression(journey_df: pd.DataFrame) -> pd.DataFrame:
         stage_progression["Stages_Reached"].map(REVERSE_STAGE_ORDER)
     )
 
-    # Patient completed the full journey if they reached Follow-up (stage 8)
+    # Patient completed the full journey if they reached First Fill (stage 5)
     stage_progression["Journey_Completed"] = (
-        stage_progression["Stages_Reached"] == 8
+        stage_progression["Stages_Reached"] == 5
     ).astype(int)
 
     return stage_progression

@@ -30,10 +30,7 @@ import {
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
-const isDemoMode =
-  process.env.NEXT_PUBLIC_DEMO_AUTH === "true" ||
-  process.env.NEXT_PUBLIC_DEMO_AUTH === undefined ||
-  process.env.NEXT_PUBLIC_DEMO_AUTH === "";
+const isDemoMode = process.env.NEXT_PUBLIC_DEMO_AUTH === "true";
 
 const delay = (ms = 120) => new Promise<void>((res) => setTimeout(res, ms));
 
@@ -104,13 +101,6 @@ async function apiGet<TResponse>(path: string): Promise<TResponse> {
 export async function registerPatient(
   data: PatientRegistration
 ): Promise<PatientRegistrationResponse> {
-  if (isDemoMode) {
-    await delay(600);
-    return {
-      patient_id: data.patient_id,
-      message: "Patient registered successfully.",
-    };
-  }
   // Map frontend lowercase keys → backend uppercase keys (Databricks schema)
   const payload = {
     Patient_ID:          data.patient_id,
@@ -133,24 +123,50 @@ export async function registerPatient(
  * In demo mode: returns centralized mock data.
  */
 export async function getPatient(patientId: string): Promise<PatientDetail> {
-  if (isDemoMode) {
-    await delay(300);
-    if (patientId === "PT-10001") {
-      return mockPatientDetail;
-    }
-    return generateMockPatientDetail(patientId);
-  }
-  return apiGet<PatientDetail>(`/api/patients/${patientId}`);
+  const res = await apiGet<PatientDetail>(`/api/patients/${patientId}`);
+  if (res && res.patient_id) return res;
+  throw new Error("Patient not found.");
 }
 
 /**
  * Get the list of registered patients for this hospital.
  * In demo mode: returns centralized mock patient list.
  */
-export async function getPatientList(): Promise<PatientListItem[]> {
-  if (isDemoMode) {
-    await delay(200);
-    return mockPatientList;
+export async function getPatientList(params: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  stage?: string;
+  min_score?: number;
+  risk_category?: string;
+  sort_field?: string;
+  sort_dir?: string;
+  region?: string;
+  insurance?: string;
+} = {}): Promise<{ data: PatientListItem[]; total: number }> {
+  
+  const queryParams = new URLSearchParams();
+  if (params.page) queryParams.append("page", String(params.page));
+  if (params.limit) queryParams.append("limit", String(params.limit));
+  if (params.search) queryParams.append("search", params.search);
+  if (params.stage) queryParams.append("stage", params.stage);
+  if (params.min_score) queryParams.append("min_score", String(params.min_score));
+  if (params.risk_category) queryParams.append("risk_category", params.risk_category);
+  if (params.sort_field) queryParams.append("sort_field", params.sort_field);
+  if (params.sort_dir) queryParams.append("sort_dir", params.sort_dir);
+  if (params.region) queryParams.append("region", params.region);
+  if (params.insurance) queryParams.append("insurance", params.insurance);
+
+  const qs = queryParams.toString();
+  const endpoint = `/api/patients${qs ? "?" + qs : ""}`;
+  
+  const res = await apiGet<any>(endpoint);
+  if (res && Array.isArray(res.data)) {
+    return { data: res.data, total: res.total || 0 };
   }
-  return apiGet<PatientListItem[]>("/api/patients");
+  if (Array.isArray(res)) {
+    return { data: res, total: res.length };
+  }
+  
+  throw new Error("Failed to fetch patient list");
 }

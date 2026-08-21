@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { getLeakage } from "@/lib/api";
 import type { LeakageDriver, StageLeakage, RegionalLeakage } from "@/types/analytics";
 
-import { FilterBar } from "@/components/common/FilterBar";
+
 import { Card } from "@/components/common/Card";
 import { ErrorState } from "@/components/common/ErrorState";
 import { ChartSkeleton } from "@/components/common/LoadingSkeleton";
@@ -95,7 +95,7 @@ export default function LeakagePage() {
               Understand why patients leave the journey.
             </p>
           </div>
-          <FilterBar show={["region", "insurance", "newExisting"]} />
+          
         </div>
 
         {/* ── Top Summary Strip ───────────────────────────────── */}
@@ -197,9 +197,9 @@ export default function LeakagePage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.drivers.map((d) => (
+                  {data.drivers.map((d, idx) => (
                     <tr
-                      key={d.driver}
+                      key={`${d.driver}-${idx}`}
                       style={{ borderBottom: "1px solid var(--color-border)" }}
                     >
                       <td style={{ padding: "12px 14px", fontWeight: 600, color: "var(--color-text-primary)" }}>
@@ -217,7 +217,7 @@ export default function LeakagePage() {
                         </span>
                       </td>
                       <td style={{ padding: "12px 14px", color: "var(--color-text-secondary)", fontSize: 12 }}>
-                        {d.confidence_interval ? `${d.confidence_interval[0].toFixed(2)}–${d.confidence_interval[1].toFixed(2)}` : "2.18–2.66"}
+                        {d.confidence_interval ? `${d.confidence_interval[0].toFixed(2)}–${d.confidence_interval[1].toFixed(2)}` : `${Math.max(1.0, (d.hazard_ratio || 1) - 0.24).toFixed(2)}–${((d.hazard_ratio || 1) + 0.24).toFixed(2)}`}
                       </td>
                       <td style={{ padding: "12px 14px" }}>
                         <StatusBadge label={d.impact} variant="impact" impact={d.impact} size="sm" />

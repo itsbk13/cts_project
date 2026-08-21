@@ -5,7 +5,7 @@ import { getFunnel } from "@/lib/api";
 import type { FunnelData } from "@/types/analytics";
 import { formatNumber, formatPercent, formatDays } from "@/lib/utils";
 
-import { FilterBar } from "@/components/common/FilterBar";
+
 import { Card } from "@/components/common/Card";
 import { ErrorState } from "@/components/common/ErrorState";
 import { ChartSkeleton } from "@/components/common/LoadingSkeleton";
@@ -63,15 +63,15 @@ export default function JourneyPage() {
         {/* Page Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
           <div>
-            <h1 className="page-title">Journey Analytics</h1>
-            <p className="page-subtitle">Trace patient progression and identify where journey friction occurs.</p>
+            <h1 className="text-page-title">Journey Analytics</h1>
+            <p className="text-body" style={{ color: "var(--color-text-secondary)", marginTop: 4 }}>Trace patient progression and identify where journey friction occurs.</p>
           </div>
           <div style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
             Data as of {lastUpdated}
           </div>
         </div>
 
-        <FilterBar />
+        
 
         {/* Top Summary / Pathway */}
         <Card title="Patient Journey Funnel">

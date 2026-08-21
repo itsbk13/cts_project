@@ -8,6 +8,7 @@ import {
   UserPlus,
   ClipboardPen,
   ChevronRight,
+  ChevronLeft,
   RefreshCw,
 } from "lucide-react";
 import { getPatientList } from "@/services/patientApi";
@@ -57,31 +58,50 @@ export default function PatientListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [sortField, setSortField] = useState<string>("patient_id");
+  const [sortAsc, setSortAsc] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Reset page to 1 when search or sorting changes
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, sortField, sortAsc]);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(false);
     try {
-      const data = await getPatientList();
-      setPatients(data);
+      const res = await getPatientList({
+        page,
+        limit: 50,
+        search: debouncedSearch,
+        stage: "ALL",
+        min_score: 0,
+        risk_category: "ALL",
+        sort_field: sortField,
+        sort_dir: sortAsc ? "asc" : "desc",
+        region: "All",
+        insurance: "All"
+      });
+      setPatients(res.data);
+      setTotal(res.total);
     } catch {
       setError(true);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [page, debouncedSearch, sortField, sortAsc]);
 
   useEffect(() => {
     load();
   }, [load]);
-
-  const filtered = patients.filter(
-    (p) =>
-      search === "" ||
-      p.patient_id.toLowerCase().includes(search.toLowerCase()) ||
-      p.region.toLowerCase().includes(search.toLowerCase()) ||
-      p.insurance.toLowerCase().includes(search.toLowerCase())
-  );
 
   if (error) return <ErrorState onRetry={load} />;
 
@@ -202,18 +222,44 @@ export default function PatientListPage() {
             background: "var(--color-bg)",
           }}
         >
-          {["Patient ID", "Age", "Region", "Insurance", "Current Stage", "Risk Score", "Risk Level", "Actions"].map((h) => (
+          {[
+            { label: "Patient ID", field: "patient_id" },
+            { label: "Age", field: "" },
+            { label: "Region", field: "" },
+            { label: "Insurance", field: "" },
+            { label: "Current Stage", field: "" },
+            { label: "Risk Score", field: "risk_score" },
+            { label: "Risk Level", field: "" },
+            { label: "Actions", field: "" },
+          ].map((col) => (
             <div
-              key={h}
+              key={col.label}
               style={{
                 fontSize: 11,
                 fontWeight: 700,
                 color: "var(--color-text-secondary)",
                 textTransform: "uppercase",
                 letterSpacing: "0.04em",
+                cursor: col.field ? "pointer" : "default",
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+              }}
+              onClick={() => {
+                if (col.field) {
+                  if (sortField === col.field) {
+                    setSortAsc(!sortAsc);
+                  } else {
+                    setSortField(col.field);
+                    setSortAsc(col.field === "patient_id");
+                  }
+                }
               }}
             >
-              {h}
+              {col.label}
+              {col.field && sortField === col.field && (
+                <span style={{ fontSize: 10 }}>{sortAsc ? "▲" : "▼"}</span>
+              )}
             </div>
           ))}
         </div>
@@ -221,24 +267,24 @@ export default function PatientListPage() {
         {/* Rows */}
         {loading ? (
           <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 12 }}>
-            {Array.from({ length: 5 }).map((_, i) => (
+            {Array.from({ length: 10 }).map((_, i) => (
               <Skeleton key={i} height={36} />
             ))}
           </div>
-        ) : filtered.length === 0 ? (
+        ) : patients.length === 0 ? (
           <EmptyState
             title="No patients found"
             message={search ? "Try a different search term." : "Register your first patient to get started."}
           />
         ) : (
-          filtered.map((patient, idx) => (
+          patients.map((patient, idx) => (
             <div
               key={patient.patient_id}
               style={{
                 display: "grid",
                 gridTemplateColumns: "1.2fr 0.6fr 1fr 1fr 1.5fr 0.8fr 0.9fr 1fr",
                 padding: "12px 18px",
-                borderBottom: idx < filtered.length - 1 ? "1px solid var(--color-border)" : "none",
+                borderBottom: idx < patients.length - 1 ? "1px solid var(--color-border)" : "none",
                 alignItems: "center",
                 background: "var(--color-surface)",
                 transition: "background 0.1s ease",
@@ -320,11 +366,32 @@ export default function PatientListPage() {
         )}
       </div>
 
-      {/* Count footer */}
-      {!loading && filtered.length > 0 && (
-        <div className="text-meta" style={{ fontSize: 12 }}>
-          Showing {filtered.length} of {patients.length} patient{patients.length !== 1 ? "s" : ""}
-          {search && ` matching "${search}"`}
+      {/* Count & Pagination footer */}
+      {!loading && patients.length > 0 && (
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div className="text-meta" style={{ fontSize: 12 }}>
+            Showing {patients.length} of {total} patient{total !== 1 ? "s" : ""}
+            {search && ` matching "${search}"`}
+          </div>
+          <div style={{ display: "flex", gap: 6 }}>
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="btn-ghost"
+              style={{ padding: "4px 8px", fontSize: 13, gap: 4 }}
+            >
+              <ChevronLeft size={14} /> Prev
+            </button>
+            <span style={{ fontSize: 13, fontWeight: 600, padding: "4px 8px" }}>Page {page}</span>
+            <button
+              onClick={() => setPage((p) => p + 1)}
+              disabled={page * 50 >= total}
+              className="btn-ghost"
+              style={{ padding: "4px 8px", fontSize: 13, gap: 4 }}
+            >
+              Next <ChevronRight size={14} />
+            </button>
+          </div>
         </div>
       )}
     </div>

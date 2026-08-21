@@ -30,6 +30,7 @@ export function DatasetModal() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
+  const [uploadMode, setUploadMode] = useState<"append" | "overwrite">("overwrite");
 
   if (!isDatasetModalOpen) return null;
 
@@ -37,7 +38,7 @@ export function DatasetModal() {
     const file = e.target.files?.[0];
     if (file) {
       setSuccessNotice(null);
-      await uploadDataset(file);
+      await uploadDataset(file, uploadMode);
       setSuccessNotice(`Successfully ingested "${file.name}" with dynamic funnel & risk recalculation.`);
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -51,7 +52,7 @@ export function DatasetModal() {
     const file = e.dataTransfer.files?.[0];
     if (file) {
       setSuccessNotice(null);
-      await uploadDataset(file);
+      await uploadDataset(file, uploadMode);
       setSuccessNotice(`Successfully ingested "${file.name}" with dynamic funnel & risk recalculation.`);
     }
   };
@@ -175,6 +176,31 @@ export function DatasetModal() {
             <span>{successNotice}</span>
           </div>
         )}
+
+        {/* Upload Mode Toggle */}
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: "var(--color-navy)" }}>Upload Mode:</span>
+          <label style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
+            <input 
+              type="radio" 
+              name="uploadMode" 
+              value="overwrite" 
+              checked={uploadMode === "overwrite"} 
+              onChange={() => setUploadMode("overwrite")} 
+            />
+            Overwrite Existing Data
+          </label>
+          <label style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
+            <input 
+              type="radio" 
+              name="uploadMode" 
+              value="append" 
+              checked={uploadMode === "append"} 
+              onChange={() => setUploadMode("append")} 
+            />
+            Append Data
+          </label>
+        </div>
 
         {/* Drag & Drop Upload Zone */}
         <div

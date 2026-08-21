@@ -74,7 +74,7 @@ function PatientRiskContent({
           <span className="text-kpi-label">Risk Category</span>
           <div style={{ marginTop: 6 }}>
             <StatusBadge
-              label={`${data.risk_category} (${data.risk_score}%)`}
+              label={`${data.risk_category} (${data.risk_score <= 1 ? (data.risk_score * 100).toFixed(1).replace(/\.0$/, '') : Number(data.risk_score).toFixed(1).replace(/\.0$/, '')}%)`}
               variant="risk"
               riskCategory={data.risk_category}
             />
@@ -131,13 +131,28 @@ function PatientRiskContent({
         </h3>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {[
-            { stage: "Diagnosis", status: "completed", days: "0d", icon: CheckCircle2, color: "var(--color-success)" },
-            { stage: "Prescription", status: "completed", days: "4d", icon: CheckCircle2, color: "var(--color-success)" },
-            { stage: "Prior Authorization", status: "current", days: `${data.days_in_current_stage}d (Delayed)`, icon: AlertTriangle, color: "var(--color-danger)" },
-            { stage: "Copay", status: "pending", days: "—", icon: Clock, color: "var(--color-text-muted)" },
-            { stage: "First Fill", status: "pending", days: "—", icon: Clock, color: "var(--color-text-muted)" },
-          ].map((step) => {
+          {["Diagnosis", "Prescription", "Prior Authorization", "Copay", "First Fill"].map((stage_name) => {
+            const apiEvent = (data.journey_timeline || []).find((t: any) => t.stage === stage_name);
+            let status = "pending";
+            let days = "—";
+            let icon = Clock;
+            let color = "var(--color-text-muted)";
+            
+            if (apiEvent) {
+                status = "completed";
+                days = "0d"; // We can just mock this or leave it simple
+                icon = CheckCircle2;
+                color = "var(--color-success)";
+            }
+            if (data.current_stage === stage_name) {
+                status = "current";
+                days = `${data.days_in_current_stage}d`;
+                icon = AlertTriangle;
+                color = "var(--color-danger)";
+            }
+            
+            const step = { stage: stage_name, status, days, icon, color };
+            
             const Icon = step.icon;
             const isCurrent = step.status === "current";
             return (

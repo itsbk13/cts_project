@@ -23,6 +23,13 @@ export interface RiskDistributionPoint {
 
 // ── Risk Patient (for table) ─────────────────────────────────
 
+export interface PaginatedRiskPatients {
+  data: RiskPatient[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 export interface RiskPatient {
   patient_id: string;
   last_updated?: string;
