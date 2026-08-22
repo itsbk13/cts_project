@@ -297,7 +297,7 @@ def decode_jwt(token: str) -> dict:
     if token.startswith("Bearer "):
         token = token.split(" ")[1]
     try:
-        payload = jwt.decode(token, utils.SECRET_KEY, algorithms=[utils.ALGORITHM], options={"verify_signature": False})
+        payload = jwt.decode(token, utils.SECRET_KEY, algorithms=[utils.ALGORITHM])
         return payload
     except JWTError:
         return {"hospital_id": token}

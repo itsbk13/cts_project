@@ -1,6 +1,343 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
-@import "tailwindcss";
-
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+@import "tailwindcss";
+
+/* ============================================================
+   PATIENT JOURNEY INTELLIGENCE COMMAND CENTER — DESIGN SYSTEM
+   Palette: Deep Navy + Deep Teal + Emerald + Amber + Coral
+   ============================================================ */
+
+:root {
+  /* Brand Colors */
+  --color-primary:        #0F766E; /* Deep Teal */
+  --color-primary-dark:   #172B4D; /* Deep Navy */
+  --color-primary-light:  #F0FDFA; /* Soft Teal Tint */
+  --color-accent:         #14B8A6; /* Bright Teal */
+
+  --color-navy:           #172B4D; /* Deep Navy Brand */
+  --color-teal:           #0F766E; /* Deep Teal Brand */
+
+  /* Surfaces */
+  --color-bg:             #F4F7F9; /* Soft Blue Gray Background */
+  --color-surface:        #FFFFFF; /* White */
+  --color-surface-hover:  #F8FAFC;
+
+  /* Text */
+  --color-text-primary:   #17202A; /* Charcoal */
+  --color-text-secondary: #64748B; /* Slate */
+  --color-text-muted:     #94A3B8;
+  --color-text-inverse:   #FFFFFF;
+
+  /* Borders */
+  --color-border:         #DCE3E8; /* Light Slate */
+  --color-border-strong:  #CBD5E1;
+
+  /* Semantic */
+  --color-success:        #16A34A; /* Emerald */
+  --color-success-bg:     #F0FDF4;
+  --color-warning:        #D97706; /* Warm Amber */
+  --color-warning-bg:     #FFFBEB;
+  --color-danger:         #DC4C4C; /* Coral Red */
+  --color-danger-bg:      #FEF2F2;
+  --color-info:           #3B82F6; /* Muted Blue */
+  --color-info-bg:        #EFF6FF;
+
+  /* Risk Semantics */
+  --color-risk-low:       #16A34A; /* Emerald */
+  --color-risk-low-bg:    #F0FDF4;
+  --color-risk-medium:    #D97706; /* Amber */
+  --color-risk-medium-bg: #FFFBEB;
+  --color-risk-high:      #DC4C4C; /* Coral */
+  --color-risk-high-bg:   #FEF2F2;
+
+  /* Chart Colors */
+  --color-chart-1: #0F766E; /* Teal */
+  --color-chart-2: #172B4D; /* Navy */
+  --color-chart-3: #16A34A; /* Emerald */
+  --color-chart-4: #D97706; /* Amber */
+  --color-chart-5: #DC4C4C; /* Coral */
+  --color-chart-6: #3B82F6; /* Blue */
+
+  /* Layout */
+  --sidebar-width:  236px;
+  --header-height:  56px;
+
+  /* Spacing */
+  --page-padding:   24px;
+  --card-padding:   18px;
+  --card-radius:    10px;
+  --control-radius: 6px;
+
+  /* Shadows */
+  --shadow-card:    0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  --shadow-drawer:  -6px 0 28px rgba(23, 43, 77, 0.12);
+  --shadow-dropdown:0 4px 18px rgba(23, 43, 77, 0.08);
+
+  /* Typography */
+  --font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* ============================================================
+   RESET & BASE
+   ============================================================ */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--color-text-primary);
+  background-color: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#__next,
+main {
+  height: 100%;
+}
+
+/* ============================================================
+   TYPOGRAPHY SCALE
+   ============================================================ */
+
+.text-app-title {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--color-text-primary);
+}
+
+.text-page-title {
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--color-text-primary);
+}
+
+.text-section-title {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--color-text-primary);
+}
+
+.text-kpi-value {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--color-text-primary);
+}
+
+.text-kpi-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.text-body {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--color-text-primary);
+}
+
+.text-meta {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--color-text-secondary);
+}
+
+.text-nav {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+/* ============================================================
+   FOCUS STYLES
+   ============================================================ */
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: var(--control-radius);
+}
+
+/* ============================================================
+   DRAWER ANIMATION
+   ============================================================ */
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.drawer-enter {
+  animation: slideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.overlay-enter {
+  animation: fadeIn 0.2s ease forwards;
+}
+
+/* ============================================================
+   SKELETON PULSE
+   ============================================================ */
+
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+
+.skeleton-pulse {
+  animation: skeletonPulse 1.6s ease-in-out infinite;
+  background-color: var(--color-border);
+  border-radius: 4px;
+}
+
+/* ============================================================
+   UTILITY OVERRIDES
+   ============================================================ */
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--card-radius);
+  box-shadow: var(--shadow-card);
+  padding: var(--card-padding);
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--control-radius);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.btn-primary:hover {
+  background: var(--color-navy);
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--control-radius);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-secondary:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-strong);
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: none;
+  border-radius: var(--control-radius);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.btn-ghost:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+
+/* ============================================================
+   RECHARTS OVERRIDES
+   ============================================================ */
+
+.recharts-tooltip-wrapper .recharts-default-tooltip {
+  background: var(--color-surface) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 6px !important;
+  box-shadow: var(--shadow-dropdown) !important;
+  font-family: var(--font-family) !important;
+  font-size: 13px !important;
+  color: var(--color-text-primary) !important;
+}
+
+.recharts-cartesian-axis-tick-value {
+  font-size: 12px;
+  fill: var(--color-text-secondary);
+}
 
 /* ============================================================
    RESPONSIVE DESIGN (MOBILE & TABLET)
