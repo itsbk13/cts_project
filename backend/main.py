@@ -7,9 +7,22 @@ from jose import jwt, JWTError
 import pandas as pd
 import numpy as np
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import os
+import sys
 
-from backend import schemas, utils
+# Ensure both the root and backend directories are in sys.path
+_current_dir = os.path.dirname(os.path.abspath(__file__))
+_root_dir = os.path.dirname(_current_dir)
+if _root_dir not in sys.path:
+    sys.path.append(_root_dir)
+if _current_dir not in sys.path:
+    sys.path.append(_current_dir)
+
+try:
+    from backend import schemas, utils
+except ImportError:
+    import schemas
+    import utils
 
 app = FastAPI(title="Hospital User System")
 

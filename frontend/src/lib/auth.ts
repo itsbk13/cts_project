@@ -114,9 +114,9 @@ export function logout(): void {
  */
 export function getCurrentUser(): UserSession | null {
   if (typeof window === "undefined") return null;
-  const stored = sessionStorage.getItem(AUTH_STORAGE_KEY);
-  if (!stored) return null;
   try {
+    const stored = sessionStorage.getItem(AUTH_STORAGE_KEY);
+    if (!stored) return null;
     const session: UserSession = JSON.parse(stored);
     
     // Auto-patch demo mode sessions missing an access token so they can access the backend without re-logging in
