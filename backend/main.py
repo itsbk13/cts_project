@@ -7,7 +7,9 @@ from jose import jwt, JWTError
 import pandas as pd
 import numpy as np
 
-import schemas, utils
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from backend import schemas, utils
 
 app = FastAPI(title="Hospital User System")
 
