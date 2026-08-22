@@ -8,3 +8,5 @@ databricks-sql-connector
 pandas
 requests
 groq
+openpyxl
+python-multipart

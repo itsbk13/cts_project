@@ -1,7 +1,7 @@
-﻿import { ChatMessage } from "@/types/ai";
+import { ChatMessage } from "@/types/ai";
 import { getCurrentUser } from "@/lib/auth";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || (process.env.NODE_ENV === "production" ? "" : "http://localhost:8000");
 
 export async function sendChatMessage(messages: any[], patientId?: string): Promise<any> {
   const session = getCurrentUser();

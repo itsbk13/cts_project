@@ -30,7 +30,7 @@ import type {
 import { mockPatientEvents, generateMockRiskScore } from "@/lib/patientMockData";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? (process.env.NODE_ENV === "production" ? "" : "http://localhost:8000");
 
 const isDemoMode = process.env.NEXT_PUBLIC_DEMO_AUTH === "true";
 
