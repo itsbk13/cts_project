@@ -4,7 +4,7 @@ sqlalchemy
 bcrypt
 python-dotenv
 python-jose[cryptography]
-databricks-sql-connector
+databricks-sql-connector[pyarrow]
 pandas
 numpy
 requests

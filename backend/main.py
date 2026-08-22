@@ -472,7 +472,7 @@ def register_patient(patient: dict, hospital_id: str = Depends(get_hospital_id))
         p = patient
 
         p_id = p.get('Patient_ID', p.get('patient_id', ''))
-        cursor.execute(f"SELECT * FROM patient_analytics.{hospital_id}.patients WHERE Patient_ID = '{p_id}'")
+        cursor.execute(f"SELECT * FROM patient_analytics.{hospital_id}.patients WHERE TRIM(Patient_ID) = '{p_id.strip()}'")
         if cursor.fetchall():
             raise HTTPException(status_code=400, detail=f"Patient ID {p_id} already exists.")
 
@@ -522,14 +522,14 @@ def instant_risk_score(req: dict, hospital_id: str = Depends(get_hospital_id)):
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute(f"SELECT * FROM patient_analytics.{hospital_id}.patients WHERE Patient_ID = '{patient_id}'")
+        cursor.execute(f"SELECT * FROM patient_analytics.{hospital_id}.patients WHERE TRIM(Patient_ID) = '{patient_id.strip()}'")
         p_rows = cursor.fetchall()
         if not p_rows:
             raise HTTPException(status_code=404, detail="Patient not found.")
         p_cols = [desc[0] for desc in cursor.description]
         patient_df = pd.DataFrame(p_rows, columns=p_cols)
 
-        cursor.execute(f"SELECT * FROM patient_analytics.{hospital_id}.journey_events WHERE Patient_ID = '{patient_id}'")
+        cursor.execute(f"SELECT * FROM patient_analytics.{hospital_id}.journey_events WHERE TRIM(Patient_ID) = '{patient_id.strip()}'")
         e_rows = cursor.fetchall()
         e_cols = ["Patient_ID", "Current_Stage", "Event_Date", "PA_Delay_Days", "Stockout_Flag", "Processing_Date", "Contact_Attempts", "Support_Enrollment", "Claim_Status"]
         if e_rows:
@@ -836,7 +836,7 @@ def get_patient_detail(patient_id: str, hospital_id: str = Depends(get_hospital_
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute(f"SELECT * FROM patient_analytics.{hospital_id}.patients WHERE Patient_ID = '{patient_id}'")
+        cursor.execute(f"SELECT * FROM patient_analytics.{hospital_id}.patients WHERE TRIM(Patient_ID) = '{patient_id.strip()}'")
         p_row = cursor.fetchone()
         if not p_row:
             raise HTTPException(status_code=404, detail="Patient not found.")
@@ -845,7 +845,7 @@ def get_patient_detail(patient_id: str, hospital_id: str = Depends(get_hospital_
 
         patient_df = pd.DataFrame([p_row], columns=p_cols)
 
-        cursor.execute(f"SELECT * FROM patient_analytics.{hospital_id}.journey_events WHERE Patient_ID = '{patient_id}' ORDER BY created_at ASC")
+        cursor.execute(f"SELECT * FROM patient_analytics.{hospital_id}.journey_events WHERE TRIM(Patient_ID) = '{patient_id.strip()}' ORDER BY created_at ASC")
         e_rows = cursor.fetchall()
         
         events = []
@@ -980,13 +980,13 @@ def log_event(patient_id: str, event: dict, hospital_id: str = Depends(get_hospi
         cursor.execute(sql_insert)
         if hasattr(conn, 'commit'):
             conn.commit()
-        cursor.execute(f"SELECT * FROM patient_analytics.{hospital_id}.patients WHERE Patient_ID = '{patient_id}'")
+        cursor.execute(f"SELECT * FROM patient_analytics.{hospital_id}.patients WHERE TRIM(Patient_ID) = '{patient_id.strip()}'")
         patient_rows = cursor.fetchall()
         if not patient_rows:
             raise HTTPException(status_code=404, detail="Patient profile not found in database.")
         patient_cols = [desc[0] for desc in cursor.description]
         patient_df = pd.DataFrame(patient_rows, columns=patient_cols)
-        cursor.execute(f"SELECT * FROM patient_analytics.{hospital_id}.journey_events WHERE Patient_ID = '{patient_id}'")
+        cursor.execute(f"SELECT * FROM patient_analytics.{hospital_id}.journey_events WHERE TRIM(Patient_ID) = '{patient_id.strip()}'")
         event_rows = cursor.fetchall()
         event_cols = [desc[0] for desc in cursor.description]
         event_df = pd.DataFrame(event_rows, columns=event_cols)
@@ -1046,7 +1046,7 @@ def get_events(patient_id: str, hospital_id: str = Depends(get_hospital_id)):
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute(f"SELECT * FROM patient_analytics.{hospital_id}.journey_events WHERE Patient_ID = '{patient_id}' ORDER BY event_date ASC")
+        cursor.execute(f"SELECT * FROM patient_analytics.{hospital_id}.journey_events WHERE TRIM(Patient_ID) = '{patient_id.strip()}' ORDER BY event_date ASC")
         rows = cursor.fetchall()
         if not rows:
             return []
@@ -1063,13 +1063,13 @@ def analyze_patient(patient_id: str, hospital_id: str = Depends(get_hospital_id)
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute(f"SELECT * FROM patient_analytics.{hospital_id}.patients WHERE Patient_ID = '{patient_id}'")
+        cursor.execute(f"SELECT * FROM patient_analytics.{hospital_id}.patients WHERE TRIM(Patient_ID) = '{patient_id.strip()}'")
         patient_rows = cursor.fetchall()
         if not patient_rows:
             raise HTTPException(status_code=404, detail="Patient profile not found in database.")
         patient_cols = [desc[0] for desc in cursor.description]
         patient_df = pd.DataFrame(patient_rows, columns=patient_cols)
-        cursor.execute(f"SELECT * FROM patient_analytics.{hospital_id}.journey_events WHERE Patient_ID = '{patient_id}'")
+        cursor.execute(f"SELECT * FROM patient_analytics.{hospital_id}.journey_events WHERE TRIM(Patient_ID) = '{patient_id.strip()}'")
         event_rows = cursor.fetchall()
         event_cols = [desc[0] for desc in cursor.description]
         event_df = pd.DataFrame(event_rows, columns=event_cols)
@@ -1607,13 +1607,13 @@ def get_patient_shap(patient_id: str, hospital_id: str = Depends(get_hospital_id
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute(f"SELECT * FROM patient_analytics.{hospital_id}.patients WHERE Patient_ID = '{patient_id}'")
+        cursor.execute(f"SELECT * FROM patient_analytics.{hospital_id}.patients WHERE TRIM(Patient_ID) = '{patient_id.strip()}'")
         patient_rows = cursor.fetchall()
         if not patient_rows:
             raise HTTPException(status_code=404, detail="Patient profile not found in database.")
         patient_cols = [desc[0] for desc in cursor.description]
         patient_df = pd.DataFrame(patient_rows, columns=patient_cols)
-        cursor.execute(f"SELECT * FROM patient_analytics.{hospital_id}.journey_events WHERE Patient_ID = '{patient_id}'")
+        cursor.execute(f"SELECT * FROM patient_analytics.{hospital_id}.journey_events WHERE TRIM(Patient_ID) = '{patient_id.strip()}'")
         event_rows = cursor.fetchall()
         event_cols = [desc[0] for desc in cursor.description]
         event_df = pd.DataFrame(event_rows, columns=event_cols)
