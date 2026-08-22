@@ -3,10 +3,13 @@ uvicorn
 sqlalchemy
 bcrypt
 python-dotenv
-python-jose
+python-jose[cryptography]
 databricks-sql-connector
 pandas
+numpy
 requests
 groq
 openpyxl
 python-multipart
+email-validator
+pydantic[email]
