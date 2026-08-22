@@ -7,9 +7,6 @@ from jose import jwt, JWTError
 import pandas as pd
 import numpy as np
 
-import os
-import sys
-
 # Ensure both the root and backend directories are in sys.path
 _current_dir = os.path.dirname(os.path.abspath(__file__))
 _root_dir = os.path.dirname(_current_dir)
