@@ -37,6 +37,9 @@ import {
 
 const delay = (ms = 80) => new Promise<void>((res) => setTimeout(res, ms));
 
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? (process.env.NODE_ENV === "production" ? "" : "http://localhost:8000");
+
 // ── Filter Multipliers & Modifiers Helper ─────────────────────
 
 function calculateFilterImpact(filters: FilterState) {
@@ -364,7 +367,7 @@ export async function getPatientRisk(patientId: string): Promise<PatientRiskDeta
     const headers: Record<string, string> = {};
     if (token) headers["Authorization"] = `Bearer ${token}`;
 
-    const res = await fetch(`http://localhost:8000/api/patients/${patientId}`, { headers });
+    const res = await fetch(`${API_BASE_URL}/api/patients/${patientId}`, { headers });
     if (!res.ok) return null as any;
     const data = await res.json();
     
@@ -413,7 +416,7 @@ export async function getPatientSHAP(patientId: string): Promise<PatientSHAPExpl
     const headers: Record<string, string> = {};
     if (token) headers["Authorization"] = `Bearer ${token}`;
 
-    const res = await fetch(`http://localhost:8000/api/patients/${patientId}/shap`, { headers });
+    const res = await fetch(`${API_BASE_URL}/api/patients/${patientId}/shap`, { headers });
     if (!res.ok) return null as any;
     const data = await res.json();
     
