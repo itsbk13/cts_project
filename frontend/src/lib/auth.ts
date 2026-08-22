@@ -37,7 +37,7 @@ export interface UserSession {
 const AUTH_STORAGE_KEY = "pji_auth_session";
 
 const isDemoMode =
-  process.env.NEXT_PUBLIC_DEMO_AUTH === "true" ||
+  process.env.NEXT_PUBLIC_DEMO_AUTH === "false" ||
   process.env.NEXT_PUBLIC_DEMO_AUTH === undefined ||
   process.env.NEXT_PUBLIC_DEMO_AUTH === "";
 
