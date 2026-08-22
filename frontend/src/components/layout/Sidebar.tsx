@@ -103,10 +103,13 @@ export function Sidebar() {
       ? !collapsed[section.label]
       : section.defaultOpen !== false;
 
+  const isMobileMenuOpen = useUIStore((s) => s.isMobileMenuOpen);
+
   return (
     <aside
+      className={!isMobileMenuOpen ? "mobile-hide" : ""}
       style={{
-        width: "var(--sidebar-width)",
+        width: "236px",
         background: "var(--color-surface)",
         borderRight: "1px solid var(--color-border)",
         display: "flex",
@@ -114,7 +117,10 @@ export function Sidebar() {
         flexShrink: 0,
         height: "100%",
         userSelect: "none",
-        zIndex: 20,
+        zIndex: 100,
+        ...(isMobileMenuOpen
+          ? { position: "fixed", left: 0, top: 0, bottom: 0 }
+          : {}),
       }}
     >
       {/* ── Brand Header ──────────────────────────────────────── */}
@@ -167,6 +173,15 @@ export function Sidebar() {
               INTELLIGENCE
             </div>
           </div>
+          
+          {isMobileMenuOpen && (
+            <button 
+              onClick={() => useUIStore.getState().closeMobileMenu()}
+              style={{ background: 'none', border: 'none', fontSize: 24, cursor: 'pointer', marginLeft: "auto", color: "var(--color-text-secondary)" }}
+            >
+              &times;
+            </button>
+          )}
         </div>
         <p style={{ fontSize: 11, color: "var(--color-text-muted)", margin: "4px 0 0", lineHeight: 1.35 }}>
           Turning patient journey data into actionable intelligence.

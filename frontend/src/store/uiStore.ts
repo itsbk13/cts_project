@@ -14,6 +14,7 @@ interface UIState {
   selectedPatientId: string | null;
   selectedStage: string | null;
   isDatasetModalOpen: boolean;
+  isMobileMenuOpen: boolean;
 }
 
 interface UIActions {
@@ -24,6 +25,8 @@ interface UIActions {
   closeDrawer: () => void;
   setSelectedStage: (stage: string | null) => void;
   setSelectedPatient: (patientId: string | null) => void;
+  toggleMobileMenu: () => void;
+  closeMobileMenu: () => void;
 }
 
 export const useUIStore = create<UIState & UIActions>((set) => ({
@@ -31,6 +34,7 @@ export const useUIStore = create<UIState & UIActions>((set) => ({
   selectedPatientId: null,
   selectedStage: null,
   isDatasetModalOpen: false,
+  isMobileMenuOpen: false,
 
   openLeakageDrawer: (stage) =>
     set({ activeDrawer: "leakage", selectedStage: stage }),
@@ -49,4 +53,7 @@ export const useUIStore = create<UIState & UIActions>((set) => ({
 
   setSelectedStage: (stage) => set({ selectedStage: stage }),
   setSelectedPatient: (patientId) => set({ selectedPatientId: patientId }),
+
+  toggleMobileMenu: () => set((state) => ({ isMobileMenuOpen: !state.isMobileMenuOpen })),
+  closeMobileMenu: () => set({ isMobileMenuOpen: false }),
 }));

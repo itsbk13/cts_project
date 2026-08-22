@@ -41,13 +41,13 @@ export function AppShell({ children }: AppShellProps) {
   useEffect(() => {
     if (isInitialized) {
       if (!session?.isAuthenticated && !isPublicPage) {
-        router.replace("/login");
+        window.location.href = "/login";
       } else if (session?.isAuthenticated && isLoginPage) {
         // Redirect authenticated users away from /login only (not register/forgot etc.)
-        router.replace("/");
+        window.location.href = "/";
       }
     }
-  }, [isInitialized, session, isPublicPage, isLoginPage, router]);
+  }, [isInitialized, session, isPublicPage, isLoginPage]);
 
   // If on any public auth route, render standalone without dashboard shell
   if (isPublicPage) {

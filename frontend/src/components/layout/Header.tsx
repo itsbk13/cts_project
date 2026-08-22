@@ -12,6 +12,7 @@ import {
   User,
   Building2,
   LogOut,
+  Menu,
 } from "lucide-react";
 import { useDatasetStore } from "@/store/datasetStore";
 import { useFilterStore } from "@/store/filterStore";
@@ -101,12 +102,21 @@ export function Header() {
       }}
     >
       {/* ── Left: Page Breadcrumb / Title ──────────────────── */}
-      <div>
-        <div style={{ fontSize: 16, fontWeight: 700, color: "var(--color-navy)", lineHeight: 1.2 }}>
-          {current.title}
-        </div>
-        <div className="text-meta" style={{ fontSize: 11, marginTop: 1 }}>
-          {current.subtitle}
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <button
+          className="md:hidden"
+          onClick={() => useUIStore.getState().toggleMobileMenu()}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-navy)' }}
+        >
+          <Menu size={24} />
+        </button>
+        <div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: "var(--color-navy)", lineHeight: 1.2 }}>
+            {current.title}
+          </div>
+          <div className="text-meta mobile-hide" style={{ fontSize: 11, marginTop: 1 }}>
+            {current.subtitle}
+          </div>
         </div>
       </div>
 

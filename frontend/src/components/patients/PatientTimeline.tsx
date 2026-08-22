@@ -63,7 +63,7 @@ export function PatientTimeline({ timeline, compact = false }: PatientTimelinePr
   if (compact) {
     // Horizontal compact version for cards
     return (
-      <div style={{ display: "flex", alignItems: "center", gap: 0, width: "100%" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 0, width: "100%", overflowX: "auto", paddingBottom: 4 }}>
         {displayTimeline.map((item, idx) => {
           const config = STATUS_CONFIG[item.status];
           const Icon = config.Icon;

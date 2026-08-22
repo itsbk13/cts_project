@@ -69,7 +69,7 @@ export function PatientSHAPWaterfall({ explanation }: PatientSHAPWaterfallProps)
           Individual Feature Contributions (TreeSHAP)
         </h3>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, overflowX: "auto" }}>
           {features.map((f) => {
             const isPushHigher = f.direction === "positive";
             const color = isPushHigher ? "var(--color-danger)" : "var(--color-teal)";
@@ -88,6 +88,7 @@ export function PatientSHAPWaterfall({ explanation }: PatientSHAPWaterfallProps)
                   border: "1px solid var(--color-border)",
                   borderRadius: 6,
                   gap: 12,
+                  minWidth: 500,
                 }}
               >
                 {/* Feature Name & Value */}
